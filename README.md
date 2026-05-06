@@ -16,7 +16,7 @@ Fully native Agentic AI for your Obsidian vault. Chat with your notes, use tools
 ### BRAT install (recommended)
 
 1. install the BRAT plug-in from the external plug-ins page of obsidian settings
-2. Click 'add beta plug-in' in the BRAT settings and paste 'https://github.com/FoundLegacy/zwei-agent-obsidian' as the plug-in source.
+2. Click 'add beta plug-in' in the BRAT settings and paste 'https://github.com/FoundLegacy/zwei-agent-obsidian' as the plug-in source
 3. Enable the plugin in Obsidian Settings → Community Plugins
 
 ### Manual Installation
@@ -31,7 +31,7 @@ Fully native Agentic AI for your Obsidian vault. Chat with your notes, use tools
 2. Go to the **Models & Providers** tab
 3. Add your API keys for the providers you want to use
 4. Configure your chat models
-5. Configure system settings
+5. Configure system/tool settings
 
 ## Development
 
