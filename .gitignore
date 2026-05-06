@@ -1,0 +1,9 @@
+node_modules/
+main.js
+main.js.map
+meta.json
+*.log
+.env
+.DS_Store
+Thumbs.db
+*.hot-update.*

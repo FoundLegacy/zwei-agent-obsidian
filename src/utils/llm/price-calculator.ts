@@ -1,0 +1,54 @@
+import {
+  DEEPSEEK_PRICES,
+  OPENAI_PRICES,
+} from '../../constants'
+import { ChatModel } from '../../types/chat-model.types'
+import { ResponseUsage } from '../../types/llm/response'
+
+// Returns the cost in dollars. Returns null if the model is not supported.
+export const calculateLLMCost = ({
+  model,
+  usage,
+}: {
+  model: ChatModel
+  usage: ResponseUsage
+}): number | null => {
+  if (model.pricing) {
+    const cachedTokens = usage.prompt_cache_hit_tokens
+      ?? usage.prompt_tokens_details?.cached_tokens
+      ?? 0
+    const missTokens = usage.prompt_cache_miss_tokens
+      ?? (usage.prompt_tokens_details?.cached_tokens !== undefined
+        ? usage.prompt_tokens - (usage.prompt_tokens_details.cached_tokens ?? 0)
+        : usage.prompt_tokens)
+    return (
+      (cachedTokens * model.pricing.inputCached +
+        missTokens * model.pricing.inputCacheMiss +
+        usage.completion_tokens * model.pricing.output) /
+      1_000_000
+    )
+  }
+
+  switch (model.providerType) {
+    case 'openai': {
+      const modelPricing = OPENAI_PRICES[model.model]
+      if (!modelPricing) return null
+      return (
+        (usage.prompt_tokens * modelPricing.input +
+          usage.completion_tokens * modelPricing.output) /
+        1_000_000
+      )
+    }
+    case 'deepseek': {
+      const modelPricing = DEEPSEEK_PRICES[model.model]
+      if (!modelPricing) return null
+      return (
+        (usage.prompt_tokens * modelPricing.input +
+          usage.completion_tokens * modelPricing.output) /
+        1_000_000
+      )
+    }
+    default:
+      return null
+  }
+}
