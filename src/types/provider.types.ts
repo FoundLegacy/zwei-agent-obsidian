@@ -13,4 +13,4 @@ export const llmProviderSchema = z.object({
 })
 
 export type LLMProvider = z.infer<typeof llmProviderSchema>
-export type LLMProviderType = 'openai' | 'deepseek'
+export type LLMProviderType = 'openai' | 'local'

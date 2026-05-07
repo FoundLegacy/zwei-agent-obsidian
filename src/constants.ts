@@ -13,11 +13,11 @@ export const PROVIDER_TYPES_INFO = {
     requireBaseUrl: false,
     additionalSettings: [],
   },
-  deepseek: {
-    label: 'DeepSeek',
-    defaultProviderId: 'deepseek',
-    requireApiKey: true,
-    requireBaseUrl: false,
+  local: {
+    label: 'Local (OpenAI-compatible)',
+    defaultProviderId: null,
+    requireApiKey: false,
+    requireBaseUrl: true,
     additionalSettings: [],
   },
 } as const satisfies Record<
@@ -71,16 +71,6 @@ export const DEFAULT_PROVIDERS: readonly LLMProvider[] = [
   },
   {
     type: 'openai',
-    id: 'xai',
-    baseUrl: 'https://api.x.ai/v1',
-  },
-  {
-    type: 'openai',
-    id: 'mistral',
-    baseUrl: 'https://api.mistral.ai/v1',
-  },
-  {
-    type: 'openai',
     id: 'kimi',
     baseUrl: 'https://api.moonshot.cn/v1',
   },
@@ -94,24 +84,36 @@ export const DEFAULT_PROVIDERS: readonly LLMProvider[] = [
     id: 'minimax',
     baseUrl: 'https://api.minimax.chat/v1',
   },
+  {
+    type: 'local',
+    id: 'lmstudio',
+    baseUrl: 'http://localhost:1234/v1',
+  },
+  {
+    type: 'local',
+    id: 'ollama',
+    baseUrl: 'http://localhost:11434/v1',
+  },
 ]
 
 export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
   {
-    providerType: 'deepseek',
+    providerType: 'openai',
     providerId: 'deepseek',
     id: 'deepseek-v4-pro',
     model: 'deepseek-v4-pro',
     temperature: 0.6,
     pricing: { inputCached: 0.14, inputCacheMiss: 0.28, output: 0.42 },
+    reasoning: { enabled: true, reasoning_effort: 'high' },
   },
   {
-    providerType: 'deepseek',
+    providerType: 'openai',
     providerId: 'deepseek',
     id: 'deepseek-v4-flash',
     model: 'deepseek-v4-flash',
     temperature: 0.6,
     pricing: { inputCached: 0.07, inputCacheMiss: 0.14, output: 0.28 },
+    reasoning: { enabled: true, reasoning_effort: 'high' },
   },
 ]
 

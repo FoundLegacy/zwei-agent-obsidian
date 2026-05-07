@@ -167,6 +167,7 @@ export function SystemSection() {
         </div>
       )}
 
+      <div className="za-settings-separator" />
       <div className="za-settings-sub-header">Context</div>
 
       <ObsidianSetting

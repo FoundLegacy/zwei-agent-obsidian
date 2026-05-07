@@ -31,23 +31,24 @@ export const calculateLLMCost = ({
 
   switch (model.providerType) {
     case 'openai': {
-      const modelPricing = OPENAI_PRICES[model.model]
-      if (!modelPricing) return null
+      const openAiPricing = OPENAI_PRICES[model.model]
+      if (!openAiPricing) {
+        const deepseekPricing = DEEPSEEK_PRICES[model.model]
+        if (!deepseekPricing) return null
+        return (
+          (usage.prompt_tokens * deepseekPricing.input +
+            usage.completion_tokens * deepseekPricing.output) /
+          1_000_000
+        )
+      }
       return (
-        (usage.prompt_tokens * modelPricing.input +
-          usage.completion_tokens * modelPricing.output) /
+        (usage.prompt_tokens * openAiPricing.input +
+          usage.completion_tokens * openAiPricing.output) /
         1_000_000
       )
     }
-    case 'deepseek': {
-      const modelPricing = DEEPSEEK_PRICES[model.model]
-      if (!modelPricing) return null
-      return (
-        (usage.prompt_tokens * modelPricing.input +
-          usage.completion_tokens * modelPricing.output) /
-        1_000_000
-      )
-    }
+    case 'local':
+      return 0
     default:
       return null
   }

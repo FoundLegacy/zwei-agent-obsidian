@@ -119,21 +119,65 @@ function PricingSection({
   )
 }
 
+function ReasoningSection({
+  reasoningEnabled,
+  setReasoningEnabled,
+  reasoningEffort,
+  setReasoningEffort,
+}: {
+  reasoningEnabled: boolean
+  setReasoningEnabled: (value: boolean) => void
+  reasoningEffort: string
+  setReasoningEffort: (value: string) => void
+}) {
+  return (
+    <>
+      <ObsidianSetting
+        name="Reasoning"
+        desc="Enable reasoning/thinking mode for this model."
+      >
+        <ObsidianToggle
+          value={reasoningEnabled}
+          onChange={(value: boolean) => setReasoningEnabled(value)}
+        />
+      </ObsidianSetting>
+      {reasoningEnabled && (
+        <ObsidianSetting
+          name="Reasoning Effort"
+          desc={`Controls reasoning depth level. Default is "medium".`}
+          className="za-setting-item--nested"
+          required
+        >
+          <ObsidianDropdown
+            value={reasoningEffort}
+            options={{
+              low: 'low',
+              medium: 'medium',
+              high: 'high',
+              xhigh: 'xhigh',
+            }}
+            onChange={(value: string) => setReasoningEffort(value)}
+          />
+        </ObsidianSetting>
+      )}
+    </>
+  )
+}
+
 const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
   {
-    check: (model) => model.providerType === 'openai',
+    check: (model) => model.providerType === 'openai' || model.providerType === 'local',
 
     SettingsComponent: (props: SettingsComponentProps) => {
       const { model: initialModel, plugin, onClose } = props
-      const typedModel = initialModel as ChatModel & { providerType: 'openai' }
       const [temperature, setTemperature] = useState(
-        typedModel.temperature?.toString() ?? '0.7',
+        initialModel.temperature?.toString() ?? '0.6',
       )
       const [reasoningEnabled, setReasoningEnabled] = useState<boolean>(
-        typedModel.reasoning?.enabled ?? false,
+        (initialModel as any).reasoning?.enabled ?? false,
       )
       const [reasoningEffort, setReasoningEffort] = useState<string>(
-        typedModel.reasoning?.reasoning_effort ?? 'medium',
+        (initialModel as any).reasoning?.reasoning_effort ?? 'medium',
       )
       const { pricingValues, setPricingValues, buildPricing } = usePricingState(initialModel)
 
@@ -144,19 +188,19 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
           return
         }
 
-        const updatedModel = {
+        const updatedModel: Record<string, unknown> = {
           ...initialModel,
           temperature: parsedTemp,
           reasoning: {
             enabled: reasoningEnabled,
             reasoning_effort: reasoningEffort as
-              | 'minimal'
               | 'low'
               | 'medium'
-              | 'high',
+              | 'high'
+              | 'xhigh',
           },
           pricing: buildPricing(),
-        } as ChatModel
+        }
 
         const validationResult = chatModelSchema.safeParse(updatedModel)
         if (!validationResult.success) {
@@ -169,7 +213,7 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
         await plugin.setSettings({
           ...plugin.settings,
           chatModels: plugin.settings.chatModels.map((m) =>
-            m.id === initialModel.id ? updatedModel : m,
+            m.id === initialModel.id ? (updatedModel as ChatModel) : m,
           ),
         })
         onClose()
@@ -179,150 +223,23 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
         <>
           <ObsidianSetting
             name="Temperature"
-            desc="Controls randomness in responses. Lower values are more deterministic (0-2). Default is 0.7."
+            desc="Controls randomness in responses. Lower values are more deterministic (0-2). Default is 0.6."
             required
           >
             <ObsidianTextInput
               value={temperature}
-              placeholder="0.7"
+              placeholder="0.6"
               onChange={(value: string) => setTemperature(value)}
               type="number"
             />
           </ObsidianSetting>
 
-          <ObsidianSetting
-            name="Reasoning"
-            desc="Enable reasoning for the model. Available for o-series models (e.g., o3, o4-mini) and GPT-5 models."
-          >
-            <ObsidianToggle
-              value={reasoningEnabled}
-              onChange={(value: boolean) => setReasoningEnabled(value)}
-            />
-          </ObsidianSetting>
-          {reasoningEnabled && (
-            <ObsidianSetting
-              name="Reasoning Effort"
-              desc={`Controls how much thinking the model does before responding. Default is "medium".`}
-              className="za-setting-item--nested"
-              required
-            >
-              <ObsidianDropdown
-                value={reasoningEffort}
-                options={{
-                  minimal: 'minimal',
-                  low: 'low',
-                  medium: 'medium',
-                  high: 'high',
-                }}
-                onChange={(value: string) => setReasoningEffort(value)}
-              />
-            </ObsidianSetting>
-          )}
-
-          <PricingSection pricingValues={pricingValues} setPricingValues={setPricingValues} />
-
-          <ObsidianSetting>
-            <ObsidianButton text="Save" onClick={handleSubmit} cta />
-            <ObsidianButton text="Cancel" onClick={onClose} />
-          </ObsidianSetting>
-        </>
-      )
-    },
-  },
-
-  {
-    check: (model) => model.providerType === 'deepseek',
-
-    SettingsComponent: (props: SettingsComponentProps) => {
-      const { model: initialModel, plugin, onClose } = props
-      const typedModel = initialModel as ChatModel & { providerType: 'deepseek' }
-      const [temperature, setTemperature] = useState(
-        typedModel.temperature?.toString() ?? '0.7',
-      )
-      const [thinkingEnabled, setThinkingEnabled] = useState<boolean>(
-        typedModel.thinking?.enabled ?? true,
-      )
-      const [thinkingEffort, setThinkingEffort] = useState<string>(
-        typedModel.thinking?.thinking_effort ?? 'high',
-      )
-      const { pricingValues, setPricingValues, buildPricing } = usePricingState(initialModel)
-
-      const handleSubmit = async () => {
-        const parsedTemp = parseFloat(temperature)
-        if (isNaN(parsedTemp) || parsedTemp < 0 || parsedTemp > 2) {
-          new Notice('Temperature must be between 0 and 2')
-          return
-        }
-
-        const updatedModel = {
-          ...initialModel,
-          temperature: parsedTemp,
-          thinking: {
-            enabled: thinkingEnabled,
-            thinking_effort: thinkingEffort as 'low' | 'medium' | 'high',
-          },
-          pricing: buildPricing(),
-        } as ChatModel
-
-        const validationResult = chatModelSchema.safeParse(updatedModel)
-        if (!validationResult.success) {
-          new Notice(
-            validationResult.error.issues.map((v) => v.message).join('\n'),
-          )
-          return
-        }
-
-        await plugin.setSettings({
-          ...plugin.settings,
-          chatModels: plugin.settings.chatModels.map((m) =>
-            m.id === initialModel.id ? updatedModel : m,
-          ),
-        })
-        onClose()
-      }
-
-      return (
-        <>
-          <ObsidianSetting
-            name="Temperature"
-            desc="Controls randomness in responses. Lower values are more deterministic (0-2). Default is 0.7."
-            required
-          >
-            <ObsidianTextInput
-              value={temperature}
-              placeholder="0.7"
-              onChange={(value: string) => setTemperature(value)}
-              type="number"
-            />
-          </ObsidianSetting>
-
-          <ObsidianSetting
-            name="Thinking"
-            desc="Enable DeepSeek's thinking mode. Controls how much reasoning the model does before responding."
-          >
-            <ObsidianToggle
-              value={thinkingEnabled}
-              onChange={(value: boolean) => setThinkingEnabled(value)}
-            />
-          </ObsidianSetting>
-          {thinkingEnabled && (
-            <ObsidianSetting
-              name="Thinking Effort Level"
-              desc={`Controls reasoning depth level. Default is "medium".`}
-              className="za-setting-item--nested"
-              required
-            >
-              <ObsidianDropdown
-                value={thinkingEffort}
-                options={{
-                  low: 'low',
-                  medium: 'medium',
-                  high: 'high',
-                }}
-                onChange={(value: string) => setThinkingEffort(value)}
-              />
-            </ObsidianSetting>
-          )}
+          <ReasoningSection
+            reasoningEnabled={reasoningEnabled}
+            setReasoningEnabled={setReasoningEnabled}
+            reasoningEffort={reasoningEffort}
+            setReasoningEffort={setReasoningEffort}
+          />
 
           <PricingSection pricingValues={pricingValues} setPricingValues={setPricingValues} />
 

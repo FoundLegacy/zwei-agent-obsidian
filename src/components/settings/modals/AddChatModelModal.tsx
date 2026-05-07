@@ -20,7 +20,7 @@ function AddChatModelComponent({ plugin, onClose }: AddChatModelComponentProps) 
   const [providerId, setProviderId] = useState('')
   const [modelId, setModelId] = useState('')
   const [modelName, setModelName] = useState('')
-  const [temperature, setTemperature] = useState('0.7')
+  const [temperature, setTemperature] = useState('0.6')
 
   const handleSubmit = async () => {
     const settings = plugin.settings
@@ -104,10 +104,10 @@ function AddChatModelComponent({ plugin, onClose }: AddChatModelComponentProps) 
         />
       </ObsidianSetting>
 
-      <ObsidianSetting name="Temperature" desc="Controls randomness (0-2, default 0.7)">
+      <ObsidianSetting name="Temperature" desc="Controls randomness (0-2, default 0.6)">
         <ObsidianTextInput
           value={temperature}
-          placeholder="0.7"
+          placeholder="0.6"
           onChange={(value) => setTemperature(value)}
         />
       </ObsidianSetting>

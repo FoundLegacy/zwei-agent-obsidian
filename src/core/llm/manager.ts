@@ -3,14 +3,8 @@ import { ChatModel } from '../../types/chat-model.types'
 import { LLMProvider } from '../../types/provider.types'
 
 import { BaseLLMProvider } from './base'
-import { DeepSeekStudioProvider } from './deepseekStudioProvider'
 import { LLMModelNotFoundException } from './exception'
 import { OpenAIAuthenticatedProvider } from './openai'
-
-/*
- * OpenAI and DeepSeek providers include token usage statistics
- * in the final chunk of the stream.
- */
 
 export function getProviderClient({
   providerId,
@@ -42,11 +36,6 @@ export function getProviderClient({
         })
       }
     : undefined
-
-  // Use DeepSeekStudioProvider for deepseek models to handle reasoning_content
-  if (model?.providerType === 'deepseek') {
-    return new DeepSeekStudioProvider(provider)
-  }
 
   return new OpenAIAuthenticatedProvider(provider)
 }

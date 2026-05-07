@@ -1,6 +1,6 @@
 {
   "name": "zwei-agent-obsidian",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Agentic AI in Obsidian.md, fully native no terminal/external tools required.",
   "main": "main.js",
   "scripts": {

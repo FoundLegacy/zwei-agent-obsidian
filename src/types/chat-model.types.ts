@@ -23,7 +23,7 @@ const baseChatModelSchema = z.object({
     .default(PromptLevel.Default)
     .optional(),
   enable: z.boolean().default(true).optional(),
-  temperature: z.number().min(0).max(2).default(0.7).optional(),
+  temperature: z.number().min(0).max(2).default(0.6).optional(),
   pricing: z
     .object({
       inputCached: z.number().min(0),
@@ -41,18 +41,20 @@ export const chatModelSchema = z.discriminatedUnion('providerType', [
       .object({
         enabled: z.boolean(),
         reasoning_effort: z
-          .enum(['minimal', 'low', 'medium', 'high'])
+          .enum(['low', 'medium', 'high', 'xhigh'])
           .optional(),
       })
       .optional(),
   }),
   z.object({
-    providerType: z.literal('deepseek'),
+    providerType: z.literal('local'),
     ...baseChatModelSchema.shape,
-    thinking: z
+    reasoning: z
       .object({
         enabled: z.boolean(),
-        thinking_effort: z.enum(['low', 'medium', 'high']).optional(),
+        reasoning_effort: z
+          .enum(['low', 'medium', 'high', 'xhigh'])
+          .optional(),
       })
       .optional(),
   }),

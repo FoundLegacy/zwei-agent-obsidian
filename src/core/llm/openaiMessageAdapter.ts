@@ -159,10 +159,8 @@ export class OpenAIMessageAdapter {
           throw new Error('Assistant message should be a string')
         }
         const hasToolCalls = message.tool_calls && message.tool_calls.length > 0
-        return {
+        const baseMessage: Record<string, unknown> = {
           role: 'assistant',
-          // Set content to null when tool_calls are present
-          // Some APIs (including DeepSeek) require content to be null for tool-calling assistants
           content: hasToolCalls ? null : message.content,
           tool_calls: hasToolCalls
             ? message.tool_calls?.map((toolCall) => ({
@@ -175,6 +173,11 @@ export class OpenAIMessageAdapter {
               }))
             : undefined,
         }
+        if (message.providerMetadata?.deepseek?.reasoningContent) {
+          baseMessage.reasoning_content =
+            message.providerMetadata.deepseek.reasoningContent
+        }
+        return baseMessage as unknown as ChatCompletionMessageParam
       }
       case 'system': {
         if (Array.isArray(message.content)) {
@@ -197,14 +200,23 @@ export class OpenAIMessageAdapter {
   ): LLMResponseNonStreaming {
     return {
       id: response.id,
-      choices: response.choices.map((choice) => ({
-        finish_reason: choice.finish_reason,
-        message: {
-          content: choice.message.content,
-          role: choice.message.role,
-          tool_calls: this.normalizeToolCalls(choice.message.tool_calls),
-        },
-      })),
+      choices: response.choices.map((choice) => {
+        const reasoningContent = (
+          choice.message as unknown as { reasoning_content?: string }
+        ).reasoning_content
+        return {
+          finish_reason: choice.finish_reason,
+          message: {
+            content: choice.message.content,
+            reasoning: reasoningContent,
+            role: choice.message.role,
+            tool_calls: this.normalizeToolCalls(choice.message.tool_calls),
+            providerMetadata: reasoningContent
+              ? { deepseek: { reasoningContent } }
+              : undefined,
+          },
+        }
+      }),
       created: response.created,
       model: response.model,
       object: 'chat.completion',
@@ -218,14 +230,23 @@ export class OpenAIMessageAdapter {
   ): LLMResponseStreaming {
     return {
       id: chunk.id,
-      choices: chunk.choices.map((choice) => ({
-        finish_reason: choice.finish_reason ?? null,
-        delta: {
-          content: choice.delta.content ?? null,
-          role: choice.delta.role,
-          tool_calls: choice.delta.tool_calls,
-        },
-      })),
+      choices: chunk.choices.map((choice) => {
+        const reasoningContent = (
+          choice.delta as unknown as { reasoning_content?: string }
+        ).reasoning_content
+        return {
+          finish_reason: choice.finish_reason ?? null,
+          delta: {
+            content: choice.delta.content ?? null,
+            reasoning: reasoningContent,
+            role: choice.delta.role,
+            tool_calls: choice.delta.tool_calls,
+            providerMetadata: reasoningContent
+              ? { deepseek: { reasoningContent } }
+              : undefined,
+          },
+        }
+      }),
       created: chunk.created,
       model: chunk.model,
       object: 'chat.completion.chunk',

@@ -15,10 +15,85 @@ export type ParsedTagContent =
       content: string
     }
 
+const THINK_PLACEHOLDER = '\u0000THINK\u0000'
+
 /**
- * Parses text containing <oa_block> and <think> tags into structured content
+ * Parses text containing <oa_block> and <think> tags into structured content.
+ *
+ * <think> blocks are extracted first using regex (streaming-safe — partial
+ * tags are left in the string content and only complete <think>...</think>
+ * pairs are extracted). <oa_block> tags are parsed using parse5 from the
+ * remaining text after think extraction.
  */
 export function parseTagContents(input: string): ParsedTagContent[] {
+  // Step 1: Extract complete <think>...</think> blocks using regex.
+  // During streaming, incomplete tags (e.g. "<think" without closing)
+  // stay in the string content without causing parse failures.
+  const thinkBlocks: string[] = []
+  const cleanedInput = input.replace(
+    /<think>([\s\S]*?)<\/think>/g,
+    (_match, content) => {
+      thinkBlocks.push(content.replace(/^\n|\n$/g, ''))
+      return THINK_PLACEHOLDER
+    },
+  )
+
+  // Step 2: Parse oa_block tags with parse5 on the cleaned input
+  try {
+    return interleaveThinkBlocks(
+      parseOaBlocks(cleanedInput),
+      thinkBlocks,
+    )
+  } catch {
+    // If parse5 fails, fall back to simple string rendering
+    // but still extract think blocks
+    if (thinkBlocks.length > 0) {
+      const result: ParsedTagContent[] = []
+      const parts = cleanedInput.split(THINK_PLACEHOLDER)
+      for (let i = 0; i < parts.length; i++) {
+        const trimmed = parts[i].trim()
+        if (trimmed) {
+          result.push({ type: 'string', content: trimmed })
+        }
+        if (i < thinkBlocks.length) {
+          result.push({ type: 'think', content: thinkBlocks[i] })
+        }
+      }
+      return result
+    }
+    return [{ type: 'string', content: input }]
+  }
+}
+
+function interleaveThinkBlocks(
+  oaBlocks: ParsedTagContent[],
+  thinkBlocks: string[],
+): ParsedTagContent[] {
+  const result: ParsedTagContent[] = []
+  let thinkIndex = 0
+  for (const block of oaBlocks) {
+    if (block.type === 'string') {
+      const parts = block.content.split(THINK_PLACEHOLDER)
+      for (let i = 0; i < parts.length; i++) {
+        const trimmed = parts[i].trim()
+        if (trimmed) {
+          result.push({ type: 'string', content: trimmed })
+        }
+        if (i < parts.length - 1 && thinkIndex < thinkBlocks.length) {
+          result.push({ type: 'think', content: thinkBlocks[thinkIndex++] })
+        }
+      }
+    } else {
+      result.push(block)
+    }
+  }
+  return result
+}
+
+function parseOaBlocks(input: string): ParsedTagContent[] {
+  if (!input.includes('<oa_block')) {
+    return [{ type: 'string', content: input }]
+  }
   const parsedResult: ParsedTagContent[] = []
   const fragment = parseFragment(input, {
     sourceCodeLocationInfo: true,
@@ -77,34 +152,6 @@ export function parseTagContents(input: string): ParsedTagContent[] {
         })
       }
       lastEndOffset = endOffset
-    } else if (node.nodeName === 'think') {
-      if (!node.sourceCodeLocation) {
-        throw new Error('sourceCodeLocation is undefined')
-      }
-      const startOffset = node.sourceCodeLocation.startOffset
-      const endOffset = node.sourceCodeLocation.endOffset
-      if (startOffset > lastEndOffset) {
-        parsedResult.push({
-          type: 'string',
-          content: input.slice(lastEndOffset, startOffset),
-        })
-      }
-
-      const children = node.childNodes
-      if (children.length > 0) {
-        const innerContentStartOffset =
-          children[0].sourceCodeLocation?.startOffset
-        const innerContentEndOffset =
-          children[children.length - 1].sourceCodeLocation?.endOffset
-        if (!innerContentStartOffset || !innerContentEndOffset) {
-          throw new Error('sourceCodeLocation is undefined')
-        }
-        parsedResult.push({
-          type: 'think',
-          content: input.slice(innerContentStartOffset, innerContentEndOffset),
-        })
-      }
-      lastEndOffset = endOffset
     }
   }
   if (lastEndOffset < input.length) {
@@ -114,19 +161,6 @@ export function parseTagContents(input: string): ParsedTagContent[] {
     })
   }
 
-  /**
-   * Remove a single leading/trailing newline from each block's content.
-   *
-   * Example input:
-   * hello world
-   * <oa_block>
-   * some content
-   * </oa_block>
-   *
-   * Becomes:
-   * { type: 'string', content: 'hello world' }
-   * { type: 'oa_block', content: 'some content' }
-   */
   parsedResult.forEach((block) => {
     block.content = block.content.replace(/^\n|\n$/g, '')
   })

@@ -387,27 +387,42 @@ export class ResponseGenerator {
     const providerMetadata = chunk.choices[0]?.delta?.providerMetadata
 
     this.updateResponseMessages((messages) =>
-      messages.map((message) =>
-        message.id === responseMessageId && message.role === 'assistant'
-          ? {
-              ...message,
-              content: message.content + content,
-              reasoning: reasoning
-                ? (message.reasoning ?? '') + reasoning
-                : message.reasoning,
-              annotations: this.mergeAnnotations(
-                message.annotations,
-                annotations,
-              ),
-              metadata: {
-                ...message.metadata,
-                usage: chunk.usage ?? message.metadata?.usage,
-              },
-              // Keep the first providerMetadata received (signature is sent once)
-              providerMetadata: message.providerMetadata ?? providerMetadata,
-            }
-          : message,
-      ),
+      messages.map((message) => {
+        if (message.id !== responseMessageId || message.role !== 'assistant') {
+          return message
+        }
+
+        const combinedContent = message.content + content
+        let strippedContent = combinedContent
+        let extractedReasoning = reasoning
+          ? (message.reasoning ?? '') + reasoning
+          : message.reasoning
+
+        // Extract <think>...</think> blocks from content (Ollama/local models
+        // embed reasoning inline rather than in a separate delta field).
+        const thinkRegex = /<think>([\s\S]*?)<\/think>/g
+        let thinkMatch: RegExpExecArray | null
+        while ((thinkMatch = thinkRegex.exec(combinedContent)) !== null) {
+          const thinkContent = thinkMatch[1].replace(/^\n|\n$/g, '')
+          extractedReasoning = (extractedReasoning ?? '') + thinkContent
+        }
+        strippedContent = combinedContent.replace(thinkRegex, '')
+
+        return {
+          ...message,
+          content: strippedContent,
+          reasoning: extractedReasoning,
+          annotations: this.mergeAnnotations(
+            message.annotations,
+            annotations,
+          ),
+          metadata: {
+            ...message.metadata,
+            usage: chunk.usage ?? message.metadata?.usage,
+          },
+          providerMetadata: message.providerMetadata ?? providerMetadata,
+        }
+      }),
     )
 
     return {

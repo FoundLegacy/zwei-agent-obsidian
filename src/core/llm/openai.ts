@@ -12,6 +12,7 @@ import {
   LLMResponseStreaming,
 } from '../../types/llm/response'
 import { LLMProvider } from '../../types/provider.types'
+import { formatMessages } from '../../utils/llm/request'
 
 import { BaseLLMProvider } from './base'
 import {
@@ -42,24 +43,27 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<LLMProvider> {
     request: LLMRequestNonStreaming,
     options?: LLMOptions,
   ): Promise<LLMResponseNonStreaming> {
-    if (model.providerType !== 'openai') {
-      throw new Error('Model is not an OpenAI model')
+    if (model.providerType !== 'openai' && model.providerType !== 'local') {
+      throw new Error('Model is not an OpenAI or Local model')
     }
 
-    if (!this.client.apiKey) {
+    if (!this.client.apiKey && model.providerType !== 'local') {
       throw new LLMAPIKeyNotSetException(
         `Provider ${this.provider.id} API key is missing. Please set it in settings menu.`,
       )
     }
     try {
+      const modelWithReasoning = model as { reasoning?: { enabled?: boolean; reasoning_effort?: string } }
+      const formattedRequest = {
+        ...request,
+        messages: formatMessages(request.messages),
+        reasoning_effort: modelWithReasoning.reasoning?.enabled
+          ? (modelWithReasoning.reasoning.reasoning_effort as ReasoningEffort)
+          : undefined,
+      }
       const response = await this.adapter.generateResponse(
         this.client,
-        {
-          ...request,
-          reasoning_effort: model.reasoning?.enabled
-            ? (model.reasoning.reasoning_effort as ReasoningEffort)
-            : undefined,
-        },
+        formattedRequest,
         options,
       )
 
@@ -103,24 +107,27 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<LLMProvider> {
     request: LLMRequestStreaming,
     options?: LLMOptions,
   ): Promise<AsyncIterable<LLMResponseStreaming>> {
-    if (model.providerType !== 'openai') {
-      throw new Error('Model is not an OpenAI model')
+    if (model.providerType !== 'openai' && model.providerType !== 'local') {
+      throw new Error('Model is not an OpenAI or Local model')
     }
 
-    if (!this.client.apiKey) {
+    if (!this.client.apiKey && model.providerType !== 'local') {
       throw new LLMAPIKeyNotSetException(
         `Provider ${this.provider.id} API key is missing. Please set it in settings menu.`,
       )
     }
     try {
+      const modelWithReasoning = model as { reasoning?: { enabled?: boolean; reasoning_effort?: string } }
+      const formattedRequest = {
+        ...request,
+        messages: formatMessages(request.messages),
+        reasoning_effort: modelWithReasoning.reasoning?.enabled
+          ? (modelWithReasoning.reasoning.reasoning_effort as ReasoningEffort)
+          : undefined,
+      }
       return await this.adapter.streamResponse(
         this.client,
-        {
-          ...request,
-          reasoning_effort: model.reasoning?.enabled
-            ? (model.reasoning.reasoning_effort as ReasoningEffort)
-            : undefined,
-        },
+        formattedRequest,
         options,
       )
     } catch (error) {
@@ -140,7 +147,7 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<LLMProvider> {
     text: string,
     options?: { dimensions?: number },
   ): Promise<number[]> {
-    if (!this.client.apiKey) {
+    if (!this.client.apiKey && this.provider.type !== 'local') {
       throw new LLMAPIKeyNotSetException(
         `Provider ${this.provider.id} API key is missing. Please set it in settings menu.`,
       )

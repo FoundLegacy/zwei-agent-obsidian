@@ -73,12 +73,10 @@ function ProviderFormComponent({
         <ObsidianDropdown
           value={providerType}
           options={Object.fromEntries(
-            Object.entries(PROVIDER_TYPES_INFO)
-              .filter(([key]) => key === 'openai')
-              .map(([key, info]) => [
-                key,
-                info.label,
-              ]),
+            Object.entries(PROVIDER_TYPES_INFO).map(([key, info]) => [
+              key,
+              info.label,
+            ]),
           )}
           onChange={(value) => setProviderType(value as LLMProviderType)}
         />
