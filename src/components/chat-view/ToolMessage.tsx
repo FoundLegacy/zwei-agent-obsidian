@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import { Check, ChevronDown, ChevronRight, Loader2, X } from 'lucide-react'
-import { memo, useCallback, useMemo, useState } from 'react'
+import { Check, ChevronDown, ChevronRight, Cog, X } from 'lucide-react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { ChatToolMessage } from '../../types/chat'
 import {
@@ -90,6 +90,14 @@ function ToolCallItem({
     response.status === ToolCallResponseStatus.PendingApproval,
   )
 
+  // Auto-expand when status transitions to PendingApproval so the user
+  // reviews changes before accepting.
+  useEffect(() => {
+    if (response.status === ToolCallResponseStatus.PendingApproval) {
+      setIsOpen(true)
+    }
+  }, [response.status])
+
   const toolName = request.name
   const parameters = useMemo(() => {
     if (!request.arguments) {
@@ -148,6 +156,7 @@ function ToolCallItem({
           {response.status === ToolCallResponseStatus.PendingApproval && (
             <div className="za-toolcall-footer-actions">
               <button
+                className="za-toolcall-btn za-toolcall-btn-allow"
                 onClick={() => {
                   handleToolCall()
                   setIsOpen(false)
@@ -156,6 +165,7 @@ function ToolCallItem({
                 Allow
               </button>
               <button
+                className="za-toolcall-btn za-toolcall-btn-reject"
                 onClick={() => {
                   handleReject()
                   setIsOpen(false)
@@ -167,7 +177,7 @@ function ToolCallItem({
           )}
           {response.status === ToolCallResponseStatus.Running && (
             <div className="za-toolcall-footer-actions">
-              <button onClick={handleAbort}>Abort</button>
+              <button className="za-toolcall-btn za-toolcall-btn-abort" onClick={handleAbort}>Abort</button>
             </div>
           )}
         </div>
@@ -222,7 +232,7 @@ function StatusIcon({ status }: { status: ToolCallResponseStatus }) {
     case ToolCallResponseStatus.Error:
       return <X size={16} style={{ color: 'var(--text-error)' }} />
     case ToolCallResponseStatus.Running:
-      return <Loader2 size={16} className="spinner" />
+      return <Cog size={16} className="za-spin-cog" />
     case ToolCallResponseStatus.Success:
       return <Check size={16} style={{ color: 'var(--text-success)' }} />
     default:

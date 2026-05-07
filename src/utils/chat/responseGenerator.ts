@@ -65,30 +65,73 @@ export class ResponseGenerator {
     }
   }
 
+  /** Merge tool call requests into an existing or new tool message. */
+  private upsertToolCalls(
+    toolCallRequests: ToolCallRequest[],
+    toolMessageId: string | null,
+  ): ChatToolMessage {
+    const existing = toolMessageId
+      ? (this.responseMessages.find(
+          (m) => m.id === toolMessageId && m.role === 'tool',
+        ) as ChatToolMessage | undefined)
+      : undefined
+
+    const existingMap = new Map(
+      existing?.toolCalls?.map((tc) => [tc.request.name, tc]) ?? [],
+    )
+
+    const toolCalls = toolCallRequests.map((tc) => {
+      const prev = existingMap.get(tc.name)
+      return {
+        request: tc,
+        response: prev?.response ?? {
+          status: this.toolManager.isToolExecutionAllowed(tc.name)
+            ? ToolCallResponseStatus.Running
+            : ToolCallResponseStatus.PendingApproval,
+        },
+      }
+    })
+
+    // Also update response status on existing entries (placeholder always set Running)
+    for (const tc of toolCalls) {
+      const allowed = this.toolManager.isToolExecutionAllowed(tc.request.name)
+      const desired = allowed
+        ? ToolCallResponseStatus.Running
+        : ToolCallResponseStatus.PendingApproval
+      if (tc.response.status !== desired) {
+        tc.response = { status: desired }
+      }
+    }
+
+    const message: ChatToolMessage = {
+      role: 'tool' as const,
+      id: existing?.id ?? toolMessageId ?? uuidv4(),
+      toolCalls,
+    }
+
+    this.updateResponseMessages((messages) =>
+      existing
+        ? messages.map((m) => (m.id === message.id ? message : m))
+        : [...messages, message],
+    )
+
+    return message
+  }
+
   public async run() {
     for (let i = 0; i < this.maxAutoIterations; i++) {
-      const { toolCallRequests } = await this.streamSingleResponse()
+      const { toolCallRequests, toolMessageId } =
+        await this.streamSingleResponse()
       if (toolCallRequests.length === 0) {
         return
       }
 
-      const toolMessage: ChatToolMessage = {
-        role: 'tool' as const,
-        id: uuidv4(),
-        toolCalls: toolCallRequests.map((toolCall) => ({
-          request: toolCall,
-          response: {
-            status: this.toolManager.isToolExecutionAllowed(toolCall.name)
-              ? ToolCallResponseStatus.Running
-              : ToolCallResponseStatus.PendingApproval,
-          },
-        })),
-      }
-
-      this.updateResponseMessages((messages) => [...messages, toolMessage])
+      const toolMessage = this.upsertToolCalls(
+        toolCallRequests,
+        toolMessageId,
+      )
 
       // Collect all tool call responses first to avoid race conditions
-      // when multiple tool calls complete simultaneously.
       const toolCallResponses = await Promise.all(
         toolMessage.toolCalls
           .filter(
@@ -143,12 +186,12 @@ export class ResponseGenerator {
 
   private async streamSingleResponse(): Promise<{
     toolCallRequests: ToolCallRequest[]
+    toolMessageId: string | null
   }> {
     const requestMessages = await this.promptGenerator.generateRequestMessages({
       messages: [...this.receivedMessages, ...this.responseMessages],
     })
 
-    // Log tool call/response pairing for debugging
     const assistantWithToolCalls = requestMessages.filter(
       (m): m is Extract<RequestMessage, { role: 'assistant' }> =>
         m.role === 'assistant' && m.tool_calls != null && m.tool_calls.length > 0,
@@ -176,8 +219,6 @@ export class ResponseGenerator {
       ? await this.toolManager.listAvailableTools()
       : []
 
-    // Set tools to undefined when no tools are available since some providers
-    // reject empty tools arrays.
     const tools: RequestTool[] | undefined =
       availableTools.length > 0
         ? availableTools.map((tool) => ({
@@ -223,6 +264,9 @@ export class ResponseGenerator {
     }
     const responseMessageId = lastMessage.id
     let responseToolCalls: Record<number, ToolCallDelta> = {}
+    let toolMessageId: string | null = null
+    let hadToolCalls = false
+
     for await (const chunk of stream) {
       const { updatedToolCalls } = this.processChunk(
         chunk,
@@ -230,10 +274,44 @@ export class ResponseGenerator {
         responseToolCalls,
       )
       responseToolCalls = updatedToolCalls
+
+      // As soon as we detect the first tool call, emit a placeholder
+      // tool message so the user sees the spinning gear immediately
+      if (!hadToolCalls && Object.keys(responseToolCalls).length > 0) {
+        hadToolCalls = true
+        const preliminaryRequests: ToolCallRequest[] =
+          Object.values(responseToolCalls)
+            .filter((tc) => tc.function?.name != null)
+            .map((tc) => ({
+              id: tc.id ?? uuidv4(),
+              name: tc.function!.name!,
+              arguments: tc.function!.arguments ?? '',
+            }))
+
+        if (preliminaryRequests.length > 0) {
+          toolMessageId = uuidv4()
+          const toolMessage: ChatToolMessage = {
+            role: 'tool' as const,
+            id: toolMessageId,
+            toolCalls: preliminaryRequests.map((req) => ({
+              request: req,
+              response: {
+                // Always show Running during streaming so the card stays
+                // collapsed with the spinning gear — never open with empty params.
+                status: ToolCallResponseStatus.Running,
+              },
+            })),
+          }
+          this.updateResponseMessages((messages) => [
+            ...messages,
+            toolMessage,
+          ])
+        }
+      }
     }
+
     const toolCallRequests: ToolCallRequest[] = Object.values(responseToolCalls)
       .map((toolCall) => {
-        // filter out invalid tool calls without a name
         if (!toolCall.function?.name) {
           return null
         }
@@ -245,6 +323,7 @@ export class ResponseGenerator {
       })
       .filter((toolCall) => toolCall !== null)
 
+    // Update the assistant message with tool call metadata
     this.updateResponseMessages((messages) =>
       messages.map((message) =>
         message.id === responseMessageId && message.role === 'assistant'
@@ -256,8 +335,10 @@ export class ResponseGenerator {
           : message,
       ),
     )
+
     return {
-      toolCallRequests: toolCallRequests,
+      toolCallRequests,
+      toolMessageId,
     }
   }
 

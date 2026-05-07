@@ -16,6 +16,7 @@ type Tool = {
         type: string
         description: string
         items?: { type: string }
+        enum?: string[]
       }
     >
     required?: string[]
@@ -26,14 +27,13 @@ const BUILTIN_TOOLS: Tool[] = [
   {
     name: 'read_vault_file',
     description:
-      "Read the full content of a file from the user's Obsidian vault. Use this to look up the content of any file you need to reference or understand when helping the user. Use only when necessary — reading large files may incur high token costs. The path should be relative to the vault root (e.g., \"folder/note.md\").",
+      "Read a file from the vault. Use sparingly — large files cost many tokens. Path is relative to vault root (e.g., \"Notes/My Note.md\").",
     inputSchema: {
       type: 'object',
       properties: {
         path: {
           type: 'string',
-          description:
-            'The file path relative to the vault root (e.g., "Projects/My Note.md")',
+          description: 'File path relative to vault root.',
         },
       },
       required: ['path'],
@@ -42,24 +42,22 @@ const BUILTIN_TOOLS: Tool[] = [
   {
     name: 'edit_vault_file',
     description:
-      "Make an exact string replacement in a vault file. Requires user approval before execution. You must have read the file content first (via read_vault_file, the user's @ mention, or current file context). Provide the exact text to replace (old_string) and the new text (new_string). If old_string is not unique in the file, the replacement will fail — provide more surrounding context to make it unique.",
+      "Replace text in a vault file. Requires user approval. You MUST have read the file first. The old_string must be UNIQUE in the file — include enough surrounding lines to disambiguate. The match is exact (whitespace, indentation, punctuation). If you get a \"appears N times\" error, retry with more surrounding context.",
     inputSchema: {
       type: 'object',
       properties: {
         path: {
           type: 'string',
-          description:
-            'The file path relative to the vault root (e.g., "Projects/My Note.md")',
+          description: 'File path relative to vault root.',
         },
         old_string: {
           type: 'string',
           description:
-            'The exact text to find and replace. Must match exactly including whitespace and indentation. If not unique, provide more surrounding context.',
+            'EXACT text to replace. Must be unique in the file. Include 2-3 surrounding lines if needed.',
         },
         new_string: {
           type: 'string',
-          description:
-            'The replacement text. Use an empty string to delete the matched text.',
+          description: 'Replacement text. Empty string deletes.',
         },
       },
       required: ['path', 'old_string', 'new_string'],
@@ -68,19 +66,17 @@ const BUILTIN_TOOLS: Tool[] = [
   {
     name: 'search_vault',
     description:
-      'Search all files in the vault for a specific word or phrase. Use this when you need to find which files mention something across the entire vault. Returns matching files with line numbers. For searching within specific known files, use search_files instead.',
+      'Search all vault files for a word or phrase. Returns file paths and matching line numbers. Prefer search_files when you know the target files.',
     inputSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description:
-            'The word or phrase to search for across all files in the vault.',
+          description: 'Word or phrase to search for.',
         },
         caseSensitive: {
           type: 'boolean',
-          description:
-            'Whether to perform a case-sensitive search. Defaults to false (case-insensitive).',
+          description: 'Case-sensitive? Default false.',
         },
       },
       required: ['query'],
@@ -89,100 +85,188 @@ const BUILTIN_TOOLS: Tool[] = [
   {
     name: 'search_files',
     description:
-      'Search for a word or phrase within one or more specific files. Use this when you already know which files to look in or when you only want to search a subset of files. For broad vault-wide searches, use search_vault instead.',
+      'Search specific files for a word or phrase. Use when you know which files to search. Returns matching line numbers per file.',
     inputSchema: {
       type: 'object',
       properties: {
         paths: {
           type: 'array',
           items: { type: 'string' },
-          description:
-            'List of file paths relative to the vault root to search within.',
+          description: 'File paths to search (relative to vault root).',
         },
         query: {
           type: 'string',
-          description:
-            'The word or phrase to search for within the specified files.',
+          description: 'Word or phrase to search for.',
         },
         caseSensitive: {
           type: 'boolean',
-          description:
-            'Whether to perform a case-sensitive search. Defaults to false (case-insensitive).',
+          description: 'Case-sensitive? Default false.',
         },
       },
       required: ['paths', 'query'],
     },
   },
   {
-    name: 'create_file',
+    name: 'file_operation',
     description:
-      'Create a new file in the vault. Supports .md, .canvas, and .base (Base) files. If you have not received the vault structure and are unsure about the directory layout, place the file at the vault root (just the filename, no directory path). This tool requires user approval before execution.',
+      'Create or delete a vault file. Requires user approval. For create: provide path + content (.md/.canvas/.base). For delete: provide path only (permanent).',
     inputSchema: {
       type: 'object',
       properties: {
+        action: {
+          type: 'string',
+          enum: ['create', 'delete'],
+          description: '"create" or "delete".',
+        },
         path: {
           type: 'string',
-          description:
-            'File path relative to the vault root including filename and extension (e.g., "Notes/My Note.md" or "canvas/board.canvas"). Use just the filename (no directory) if unsure about directory layout.',
+          description: 'File path relative to vault root, e.g. "Notes/My Note.md".',
         },
         content: {
           type: 'string',
-          description:
-            'The initial content of the file. For .canvas files, provide valid JSON canvas data. For .md files, provide markdown content.',
+          description: 'Required for create. File content (markdown, JSON canvas, etc.).',
         },
       },
-      required: ['path', 'content'],
+      required: ['action', 'path'],
     },
   },
   {
-    name: 'delete_file',
+    name: 'folder_operation',
     description:
-      'Delete a file from the vault. This tool requires user approval before execution. Use with caution — deletion is permanent and cannot be undone.',
+      'Create or delete a vault folder. Requires user approval. Create creates parents as needed. Delete only works on empty folders.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['create', 'delete'],
+          description: '"create" or "delete".',
+        },
+        path: {
+          type: 'string',
+          description: 'Folder path relative to vault root, e.g. "Projects/New".',
+        },
+      },
+      required: ['action', 'path'],
+    },
+  },
+  {
+    name: 'rename_file',
+    description:
+      'Rename or move a vault file. Requires user approval. Provide current and new path.',
     inputSchema: {
       type: 'object',
       properties: {
         path: {
           type: 'string',
-          description:
-            'File path relative to the vault root of the file to delete.',
+          description: 'Current file path.',
+        },
+        new_path: {
+          type: 'string',
+          description: 'New file path.',
         },
       },
-      required: ['path'],
+      required: ['path', 'new_path'],
     },
   },
   {
-    name: 'create_folder',
+    name: 'rename_folder',
     description:
-      'Create a new folder/directory in the vault. This tool requires user approval before execution. Parent directories will be created as needed.',
+      'Rename or move a vault folder (all contents move with it). Requires user approval.',
     inputSchema: {
       type: 'object',
       properties: {
         path: {
           type: 'string',
-          description:
-            'Folder path relative to the vault root (e.g., "Projects/New Folder" or "Notes/Subfolder").',
+          description: 'Current folder path.',
+        },
+        new_path: {
+          type: 'string',
+          description: 'New folder path.',
         },
       },
-      required: ['path'],
+      required: ['path', 'new_path'],
     },
   },
   {
-    name: 'delete_folder',
+    name: 'list_css_snippets',
     description:
-      'Delete a folder/directory from the vault. This tool requires user approval before execution. The folder must be empty (no files or subfolders).',
+      'List all CSS snippets in .obsidian/snippets/. Returns filenames.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'read_css_snippet',
+    description:
+      'Read the content of a CSS snippet from .obsidian/snippets/. Provide the filename (e.g. "my-theme.css").',
     inputSchema: {
       type: 'object',
       properties: {
-        path: {
+        filename: {
           type: 'string',
-          description:
-            'Folder path relative to the vault root of the folder to delete.',
+          description: 'CSS snippet filename, e.g. "my-theme.css".',
         },
       },
-      required: ['path'],
+      required: ['filename'],
+    },
+  },
+  {
+    name: 'edit_css_snippet',
+    description:
+      'Edit a CSS snippet by exact string replacement. Requires user approval. Must read snippet first. old_string must be UNIQUE — include surrounding lines if ambiguous.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filename: {
+          type: 'string',
+          description: 'Snippet filename, e.g. "my-theme.css".',
+        },
+        old_string: {
+          type: 'string',
+          description: 'EXACT text to replace. Must be unique in the snippet.',
+        },
+        new_string: {
+          type: 'string',
+          description: 'Replacement text. Empty string deletes.',
+        },
+      },
+      required: ['filename', 'old_string', 'new_string'],
+    },
+  },
+  {
+    name: 'css_snippet_operation',
+    description:
+      'Create or delete a CSS snippet in .obsidian/snippets/. Requires user approval. For create: provide filename (.css) + content. For delete: provide filename (permanent).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['create', 'delete'],
+          description: '"create" or "delete".',
+        },
+        filename: {
+          type: 'string',
+          description: 'Filename ending in .css, e.g. "my-theme.css".',
+        },
+        content: {
+          type: 'string',
+          description: 'Required for create. The CSS content.',
+        },
+      },
+      required: ['action', 'filename'],
     },
   },
 ]
+
+function cssSnippetPath(filename: string): string {
+  return normalizePath(`.obsidian/snippets/${filename}`)
+}
+
+const BUILTIN_TOOL_NAMES = new Set(BUILTIN_TOOLS.map((t) => t.name))
 
 export class ToolManager {
   private app: App
@@ -191,7 +275,9 @@ export class ToolManager {
 
   constructor(app: App, enabledTools?: string[]) {
     this.app = app
-    this.enabledTools = enabledTools ?? BUILTIN_TOOLS.map((t) => t.name)
+    this.enabledTools = (enabledTools ?? [...BUILTIN_TOOL_NAMES]).filter(
+      (name) => BUILTIN_TOOL_NAMES.has(name),
+    )
   }
 
   getBuiltinTools(): Tool[] {
@@ -204,10 +290,12 @@ export class ToolManager {
 
   isToolExecutionAllowed(toolName: string): boolean {
     if (toolName === 'edit_vault_file') return false
-    if (toolName === 'create_file') return false
-    if (toolName === 'delete_file') return false
-    if (toolName === 'create_folder') return false
-    if (toolName === 'delete_folder') return false
+    if (toolName === 'file_operation') return false
+    if (toolName === 'folder_operation') return false
+    if (toolName === 'rename_file') return false
+    if (toolName === 'rename_folder') return false
+    if (toolName === 'edit_css_snippet') return false
+    if (toolName === 'css_snippet_operation') return false
     return true
   }
 
@@ -253,7 +341,7 @@ export class ToolManager {
   }
 
   private isBuiltinTool(name: string): boolean {
-    return BUILTIN_TOOLS.some((t) => t.name === name)
+    return BUILTIN_TOOL_NAMES.has(name)
   }
 
   private async executeBuiltinTool({
@@ -397,14 +485,14 @@ export class ToolManager {
           return {
             status: ToolCallResponseStatus.Error,
             error:
-              `The text to replace was not found in the file. The file content is:\n\n\`\`\`\n${content}\n\`\`\``,
+              `Text not found in the file. The exact text including all whitespace must match. File content:\n\n\`\`\`\n${content}\n\`\`\``,
           }
         }
         if (occurrences > 1) {
           return {
             status: ToolCallResponseStatus.Error,
             error:
-              `The text to replace appears ${occurrences} times in the file. Provide more surrounding context to make it unique.`,
+              `Found ${occurrences} matches — the old_string must be unique. Include more surrounding context (2-3 lines). Try again with a longer match string from:\n\n\`\`\`\n${content}\n\`\`\``,
           }
         }
 
@@ -601,59 +689,8 @@ export class ToolManager {
         }
       }
 
-      if (name === 'create_file') {
-        const path = parsedArgs['path']
-        const content = parsedArgs['content']
-
-        if (typeof path !== 'string' || !path) {
-          return {
-            status: ToolCallResponseStatus.Error,
-            error:
-              'Missing or invalid "path" parameter. Provide the file path relative to the vault root.',
-          }
-        }
-        if (typeof content !== 'string') {
-          return {
-            status: ToolCallResponseStatus.Error,
-            error:
-              'Missing or invalid "content" parameter. Provide the file content.',
-          }
-        }
-
-        const normalizedPath = normalizePath(path)
-        const existing = this.app.vault.getAbstractFileByPath(normalizedPath)
-        if (existing) {
-          return {
-            status: ToolCallResponseStatus.Error,
-            error: `A file or folder already exists at path: ${path}`,
-          }
-        }
-
-        if (compositeSignal.aborted) {
-          return { status: ToolCallResponseStatus.Aborted }
-        }
-
-        // Ensure parent directories exist
-        const parentPath = normalizedPath.split('/').slice(0, -1).join('/')
-        if (parentPath) {
-          const parentFolder = this.app.vault.getAbstractFileByPath(parentPath)
-          if (!parentFolder) {
-            await this.app.vault.createFolder(parentPath)
-          }
-        }
-
-        await this.app.vault.create(normalizedPath, content)
-
-        return {
-          status: ToolCallResponseStatus.Success,
-          data: {
-            type: 'text',
-            text: `File created successfully: ${path}`,
-          },
-        }
-      }
-
-      if (name === 'delete_file') {
+      if (name === 'file_operation') {
+        const action = parsedArgs['action']
         const path = parsedArgs['path']
 
         if (typeof path !== 'string' || !path) {
@@ -663,8 +700,58 @@ export class ToolManager {
               'Missing or invalid "path" parameter. Provide the file path relative to the vault root.',
           }
         }
+        if (action !== 'create' && action !== 'delete') {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "action" parameter. Must be "create" or "delete".',
+          }
+        }
 
         const normalizedPath = normalizePath(path)
+
+        if (action === 'create') {
+          const content = parsedArgs['content']
+          if (typeof content !== 'string') {
+            return {
+              status: ToolCallResponseStatus.Error,
+              error:
+                'Missing or invalid "content" parameter. Provide the file content for "create" action.',
+            }
+          }
+
+          const existing = this.app.vault.getAbstractFileByPath(normalizedPath)
+          if (existing) {
+            return {
+              status: ToolCallResponseStatus.Error,
+              error: `A file or folder already exists at path: ${path}`,
+            }
+          }
+
+          if (compositeSignal.aborted) {
+            return { status: ToolCallResponseStatus.Aborted }
+          }
+
+          const parentPath = normalizedPath.split('/').slice(0, -1).join('/')
+          if (parentPath) {
+            const parentFolder = this.app.vault.getAbstractFileByPath(parentPath)
+            if (!parentFolder) {
+              await this.app.vault.createFolder(parentPath)
+            }
+          }
+
+          await this.app.vault.create(normalizedPath, content)
+
+          return {
+            status: ToolCallResponseStatus.Success,
+            data: {
+              type: 'text',
+              text: `File created successfully: ${path}`,
+            },
+          }
+        }
+
+        // action === 'delete'
         const file = this.app.vault.getAbstractFileByPath(normalizedPath)
 
         if (!file) {
@@ -677,7 +764,7 @@ export class ToolManager {
         if (!(file instanceof TFile)) {
           return {
             status: ToolCallResponseStatus.Error,
-            error: `Path "${path}" is not a file. Cannot delete folders through this tool.`,
+            error: `Path "${path}" is not a file. Use folder_operation for folders.`,
           }
         }
 
@@ -696,7 +783,8 @@ export class ToolManager {
         }
       }
 
-      if (name === 'create_folder') {
+      if (name === 'folder_operation') {
+        const action = parsedArgs['action']
         const path = parsedArgs['path']
 
         if (typeof path !== 'string' || !path) {
@@ -706,43 +794,41 @@ export class ToolManager {
               'Missing or invalid "path" parameter. Provide the folder path relative to the vault root.',
           }
         }
-
-        const normalizedPath = normalizePath(path)
-        const existing = this.app.vault.getAbstractFileByPath(normalizedPath)
-        if (existing) {
-          return {
-            status: ToolCallResponseStatus.Error,
-            error: `A file or folder already exists at path: ${path}`,
-          }
-        }
-
-        if (compositeSignal.aborted) {
-          return { status: ToolCallResponseStatus.Aborted }
-        }
-
-        await this.app.vault.createFolder(normalizedPath)
-
-        return {
-          status: ToolCallResponseStatus.Success,
-          data: {
-            type: 'text',
-            text: `Folder created successfully: ${path}`,
-          },
-        }
-      }
-
-      if (name === 'delete_folder') {
-        const path = parsedArgs['path']
-
-        if (typeof path !== 'string' || !path) {
+        if (action !== 'create' && action !== 'delete') {
           return {
             status: ToolCallResponseStatus.Error,
             error:
-              'Missing or invalid "path" parameter. Provide the folder path relative to the vault root.',
+              'Missing or invalid "action" parameter. Must be "create" or "delete".',
           }
         }
 
         const normalizedPath = normalizePath(path)
+
+        if (action === 'create') {
+          const existing = this.app.vault.getAbstractFileByPath(normalizedPath)
+          if (existing) {
+            return {
+              status: ToolCallResponseStatus.Error,
+              error: `A file or folder already exists at path: ${path}`,
+            }
+          }
+
+          if (compositeSignal.aborted) {
+            return { status: ToolCallResponseStatus.Aborted }
+          }
+
+          await this.app.vault.createFolder(normalizedPath)
+
+          return {
+            status: ToolCallResponseStatus.Success,
+            data: {
+              type: 'text',
+              text: `Folder created successfully: ${path}`,
+            },
+          }
+        }
+
+        // action === 'delete'
         const folder = this.app.vault.getAbstractFileByPath(normalizedPath)
 
         if (!folder) {
@@ -755,7 +841,7 @@ export class ToolManager {
         if (!(folder instanceof TFolder)) {
           return {
             status: ToolCallResponseStatus.Error,
-            error: `Path "${path}" is not a folder.`,
+            error: `Path "${path}" is not a folder. Use file_operation for files.`,
           }
         }
 
@@ -777,6 +863,366 @@ export class ToolManager {
           data: {
             type: 'text',
             text: `Folder deleted: ${path}`,
+          },
+        }
+      }
+
+      if (name === 'rename_file') {
+        const path = parsedArgs['path']
+        const newPath = parsedArgs['new_path']
+
+        if (typeof path !== 'string' || !path) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "path" parameter. Provide the current file path.',
+          }
+        }
+        if (typeof newPath !== 'string' || !newPath) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "new_path" parameter. Provide the new file path.',
+          }
+        }
+
+        const normalizedPath = normalizePath(path)
+        const normalizedNewPath = normalizePath(newPath)
+        const file = this.app.vault.getAbstractFileByPath(normalizedPath)
+
+        if (!file) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `File not found at path: ${path}`,
+          }
+        }
+
+        if (!(file instanceof TFile)) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `Path "${path}" is not a file.`,
+          }
+        }
+
+        const existing = this.app.vault.getAbstractFileByPath(normalizedNewPath)
+        if (existing) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `A file or folder already exists at path: ${newPath}`,
+          }
+        }
+
+        if (compositeSignal.aborted) {
+          return { status: ToolCallResponseStatus.Aborted }
+        }
+
+        await this.app.vault.rename(file, normalizedNewPath)
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: `File renamed successfully: ${path} → ${newPath}`,
+          },
+        }
+      }
+
+      if (name === 'rename_folder') {
+        const path = parsedArgs['path']
+        const newPath = parsedArgs['new_path']
+
+        if (typeof path !== 'string' || !path) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "path" parameter. Provide the current folder path.',
+          }
+        }
+        if (typeof newPath !== 'string' || !newPath) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "new_path" parameter. Provide the new folder path.',
+          }
+        }
+
+        const normalizedPath = normalizePath(path)
+        const normalizedNewPath = normalizePath(newPath)
+        const folder = this.app.vault.getAbstractFileByPath(normalizedPath)
+
+        if (!folder) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `Folder not found at path: ${path}`,
+          }
+        }
+
+        if (!(folder instanceof TFolder)) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `Path "${path}" is not a folder.`,
+          }
+        }
+
+        const existing = this.app.vault.getAbstractFileByPath(normalizedNewPath)
+        if (existing) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `A file or folder already exists at path: ${newPath}`,
+          }
+        }
+
+        if (compositeSignal.aborted) {
+          return { status: ToolCallResponseStatus.Aborted }
+        }
+
+        await this.app.vault.rename(folder, normalizedNewPath)
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: `Folder renamed successfully: ${path} → ${newPath}`,
+          },
+        }
+      }
+
+      if (name === 'list_css_snippets') {
+        const snippetsDir = normalizePath('.obsidian/snippets')
+        const exists = await this.app.vault.adapter.exists(snippetsDir)
+        if (!exists) {
+          return {
+            status: ToolCallResponseStatus.Success,
+            data: {
+              type: 'text',
+              text: 'No CSS snippets found. The .obsidian/snippets folder does not exist yet.',
+            },
+          }
+        }
+
+        const files = await this.app.vault.adapter.list(snippetsDir)
+        const cssFiles = files.files.filter((f) => f.endsWith('.css'))
+
+        if (cssFiles.length === 0) {
+          return {
+            status: ToolCallResponseStatus.Success,
+            data: {
+              type: 'text',
+              text: 'No CSS snippets found. The .obsidian/snippets folder is empty.',
+            },
+          }
+        }
+
+        const snippetList = cssFiles
+          .map((f) => {
+            const name = f.replace(/\.css$/i, '')
+            return `- ${f} (${name})`
+          })
+          .join('\n')
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: `Found ${cssFiles.length} CSS snippet(s):\n\n${snippetList}`,
+          },
+        }
+      }
+
+      if (name === 'read_css_snippet') {
+        const filename = parsedArgs['filename']
+        if (typeof filename !== 'string' || !filename) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "filename" parameter. Provide the CSS snippet filename (e.g., "my-theme.css").',
+          }
+        }
+
+        const snippetPath = cssSnippetPath(filename)
+        if (!(await this.app.vault.adapter.exists(snippetPath))) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `CSS snippet not found: ${filename}`,
+          }
+        }
+
+        if (compositeSignal.aborted) {
+          return { status: ToolCallResponseStatus.Aborted }
+        }
+
+        const content = await this.app.vault.adapter.read(snippetPath)
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: `## ${filename}\n\n\`\`\`css\n${content}\n\`\`\``,
+          },
+        }
+      }
+
+      if (name === 'edit_css_snippet') {
+        const filename = parsedArgs['filename']
+        const oldString = parsedArgs['old_string']
+        const newString = parsedArgs['new_string']
+
+        if (typeof filename !== 'string' || !filename) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: 'Missing or invalid "filename" parameter.',
+          }
+        }
+        if (typeof oldString !== 'string') {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: 'Missing or invalid "old_string" parameter.',
+          }
+        }
+        if (typeof newString !== 'string') {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: 'Missing or invalid "new_string" parameter.',
+          }
+        }
+
+        const snippetPath = cssSnippetPath(filename)
+        if (!(await this.app.vault.adapter.exists(snippetPath))) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `CSS snippet not found: ${filename}`,
+          }
+        }
+
+        if (compositeSignal.aborted) {
+          return { status: ToolCallResponseStatus.Aborted }
+        }
+
+        const content = await this.app.vault.adapter.read(snippetPath)
+
+        const occurrences = countOccurrences(content, oldString)
+        if (occurrences === 0) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              `Text not found in the snippet. The exact text including all whitespace must match. Snippet content:\n\n\`\`\`css\n${content}\n\`\`\``,
+          }
+        }
+        if (occurrences > 1) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              `Found ${occurrences} matches — the old_string must be unique. Include more surrounding context (2-3 lines). Try again with a longer match from:\n\n\`\`\`css\n${content}\n\`\`\``,
+          }
+        }
+
+        if (compositeSignal.aborted) {
+          return { status: ToolCallResponseStatus.Aborted }
+        }
+
+        const newContent = content.replace(oldString, newString)
+        await this.app.vault.adapter.write(snippetPath, newContent)
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: `CSS snippet edited successfully: ${filename}`,
+          },
+        }
+      }
+
+      if (name === 'css_snippet_operation') {
+        const action = parsedArgs['action']
+        const filename = parsedArgs['filename']
+
+        if (typeof filename !== 'string' || !filename) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "filename" parameter.',
+          }
+        }
+        if (action !== 'create' && action !== 'delete') {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Missing or invalid "action" parameter. Must be "create" or "delete".',
+          }
+        }
+
+        if (action === 'create') {
+          if (!filename.endsWith('.css')) {
+            return {
+              status: ToolCallResponseStatus.Error,
+              error:
+                'Filename must end with .css (e.g., "my-theme.css").',
+            }
+          }
+          const content = parsedArgs['content']
+          if (typeof content !== 'string') {
+            return {
+              status: ToolCallResponseStatus.Error,
+              error:
+                'Missing or invalid "content" parameter. Provide the CSS content for "create" action.',
+            }
+          }
+
+          const snippetPath = cssSnippetPath(filename)
+
+          if (await this.app.vault.adapter.exists(snippetPath)) {
+            return {
+              status: ToolCallResponseStatus.Error,
+              error: `A CSS snippet already exists at: ${filename}`,
+            }
+          }
+
+          // Ensure .obsidian/snippets directory exists
+          const snippetsDir = normalizePath('.obsidian/snippets')
+          if (!(await this.app.vault.adapter.exists(snippetsDir))) {
+            const obsidianDir = normalizePath('.obsidian')
+            if (!(await this.app.vault.adapter.exists(obsidianDir))) {
+              await this.app.vault.adapter.mkdir(obsidianDir)
+            }
+            await this.app.vault.adapter.mkdir(snippetsDir)
+          }
+
+          if (compositeSignal.aborted) {
+            return { status: ToolCallResponseStatus.Aborted }
+          }
+
+          await this.app.vault.adapter.write(snippetPath, content)
+
+          return {
+            status: ToolCallResponseStatus.Success,
+            data: {
+              type: 'text',
+              text: `CSS snippet created successfully: ${filename}`,
+            },
+          }
+        }
+
+        // action === 'delete'
+        const snippetPath = cssSnippetPath(filename)
+
+        if (!(await this.app.vault.adapter.exists(snippetPath))) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `CSS snippet not found: ${filename}`,
+          }
+        }
+
+        if (compositeSignal.aborted) {
+          return { status: ToolCallResponseStatus.Aborted }
+        }
+
+        await this.app.vault.adapter.remove(snippetPath)
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: `CSS snippet deleted: ${filename}`,
           },
         }
       }

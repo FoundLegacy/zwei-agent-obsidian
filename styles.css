@@ -1672,19 +1672,56 @@ button.za-chat-input-model-select {
   .za-toolcall-footer-actions {
     display: flex;
     align-items: center;
-    gap: var(--size-4-1);
+    gap: var(--size-4-2);
+  }
+}
 
-    button {
-      background-color: var(--background-primary-alt);
-      border: 1px solid var(--background-modifier-border);
-      box-shadow: none;
+.za-toolcall-btn {
+  padding: var(--size-4-1) var(--size-4-3);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  letter-spacing: 0.01em;
+}
 
-      &:hover {
-        background-color: var(--background-modifier-hover);
-        border: 1px solid var(--background-modifier-border-hover);
-        box-shadow: none;
-      }
-    }
+.za-toolcall-btn-allow {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+
+  &:hover {
+    background: var(--interactive-accent-hover, var(--interactive-accent));
+    border-color: var(--interactive-accent-hover, var(--interactive-accent));
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+  }
+}
+
+.za-toolcall-btn-reject {
+  background: var(--background-primary);
+  color: var(--text-muted);
+  border-color: var(--background-modifier-border);
+
+  &:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-error);
+    border-color: var(--text-error);
+  }
+}
+
+.za-toolcall-btn-abort {
+  background: var(--background-primary);
+  color: var(--text-muted);
+  border-color: var(--background-modifier-border);
+
+  &:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-warning);
+    border-color: var(--text-warning);
   }
 }
 
@@ -2195,4 +2232,61 @@ button.za-chat-input-model-select {
 .installed-plugins-container .setting-item:last-of-type .clickable-icon:hover {
   color: var(--interactive-accent);
   transform: scale(1.15) rotate(4deg);
+}
+
+/* ========================================================================
+   Spinning gear icon for tool call running status
+   ======================================================================== */
+
+.za-spin-cog {
+  animation: za-spin-cog 1.5s linear infinite;
+  color: var(--text-muted);
+}
+
+@keyframes za-spin-cog {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================================================
+   Tools sub-tabs within the Tools settings section
+   ======================================================================== */
+
+.za-tools-tab-bar {
+  display: flex;
+  gap: var(--size-2-1);
+  margin: var(--size-4-4) 0 var(--size-4-3) 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: var(--size-4-2);
+}
+
+.za-tools-tab {
+  padding: var(--size-2-1) var(--size-4-3);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.za-tools-tab:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.za-tools-tab--active {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+.za-tools-tab--active:hover {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
 }

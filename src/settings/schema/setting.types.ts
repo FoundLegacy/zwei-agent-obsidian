@@ -53,7 +53,7 @@ export const zweiAgentSettingsSchema = z.object({
   // Tools - list of enabled tool names
   enabledTools: z
     .array(z.string())
-    .catch(['read_vault_file', 'edit_vault_file', 'search_vault', 'search_files', 'create_file', 'delete_file', 'create_folder', 'delete_folder']),
+    .catch(['read_vault_file', 'edit_vault_file', 'search_vault', 'search_files', 'file_operation', 'folder_operation', 'rename_file', 'rename_folder', 'list_css_snippets', 'read_css_snippet', 'edit_css_snippet', 'css_snippet_operation']),
 
   // Templates stored in data.json
   templates: z

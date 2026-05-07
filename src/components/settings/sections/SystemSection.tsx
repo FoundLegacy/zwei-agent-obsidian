@@ -121,6 +121,8 @@ export function SystemSection() {
     <div className="za-settings-section">
       <div className="za-settings-header">System Configuration</div>
 
+      <div className="za-settings-sub-header">System Prompt</div>
+
       <ObsidianSetting
         name="Enable system prompt"
         desc="When enabled, the content of the selected markdown file will be used as the system prompt for every chat. The file is read fresh at the start of each chat session."
@@ -165,6 +167,8 @@ export function SystemSection() {
         </div>
       )}
 
+      <div className="za-settings-sub-header">Context</div>
+
       <ObsidianSetting
         name="Include current file"
         desc="Automatically include the content of your current file in chats."
@@ -183,6 +187,9 @@ export function SystemSection() {
           }}
         />
       </ObsidianSetting>
+
+      <div className="za-settings-separator" />
+      <div className="za-settings-sub-header">Vault Structure</div>
 
       <ObsidianSetting
         name="Include vault structure"
