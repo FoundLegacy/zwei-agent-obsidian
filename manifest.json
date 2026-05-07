@@ -1,9 +1,9 @@
 {
   "id": "zwei-agent-obsidian",
   "name": "Zwei Agent",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "minAppVersion": "0.15.0",
-  "description": "Fully native Agentic AI for Obsidian.md, no terminal/external tools needed.",
+  "description": "Fully native Agentic AI for Obsidian.md, no terminal/external tools required.",
   "author": "FoundLegacy",
   "authorUrl": "https://github.com/FoundLegacy",
   "fundingUrl": "https://ko-fi.com/foundlegacy",

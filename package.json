@@ -1,7 +1,7 @@
 {
   "name": "zwei-agent-obsidian",
-  "version": "3.1.0",
-  "description": "AI agent for your vault.",
+  "version": "3.2.0",
+  "description": "Agentic AI in Obsidian.md, fully native no terminal/external tools required.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
