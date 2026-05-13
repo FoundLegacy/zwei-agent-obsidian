@@ -81,14 +81,13 @@ export function TemplateSection({ app }: TemplateSectionProps) {
         title: 'Delete Saved Prompt',
         message: message,
         ctaText: 'Delete',
-        onConfirm: async () => {
-          try {
-            await templateManager.deleteTemplate(template.id)
+        onConfirm: () => {
+          void templateManager.deleteTemplate(template.id).then(() => {
             fetchTemplateList()
-          } catch (error) {
+          }).catch((error: Error) => {
             console.error('Failed to delete saved prompt:', error)
             new Notice('Failed to delete saved prompt. Please try again.')
-          }
+          })
         },
       }).open()
     },
@@ -96,7 +95,7 @@ export function TemplateSection({ app }: TemplateSectionProps) {
   )
 
   useEffect(() => {
-    fetchTemplateList()
+    void fetchTemplateList()
   }, [fetchTemplateList])
 
   return (

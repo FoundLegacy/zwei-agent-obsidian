@@ -130,14 +130,14 @@ export class YoutubeTranscript {
 
     const captions = (() => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- YouTube page HTML parsing returns unstructured JSON
-        return JSON.parse(
+        const parsed = JSON.parse(
           splittedHTML[1].split(',"videoDetails')[0].replace('\n', ''),
-        )
-      } catch (_e) {
+        ) as Record<string, unknown>
+        return parsed.playerCaptionsTracklistRenderer as PlayerCaptionsTracklistRenderer | undefined
+      } catch {
         return undefined
       }
-    })()?.playerCaptionsTracklistRenderer as PlayerCaptionsTracklistRenderer | undefined
+    })()
 
     if (!captions) {
       throw new YoutubeTranscriptDisabledError(videoId)

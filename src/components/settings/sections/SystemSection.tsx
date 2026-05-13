@@ -49,7 +49,7 @@ export function SystemSection() {
       const tokens = await tokenCount(vaultTree)
       if (!cancelled) setVaultTokenEstimate(tokens)
     }
-    computeVaultTokens()
+    void computeVaultTokens()
     return () => { cancelled = true }
   }, [plugin, vaultStructureFolders, relevantExtensions, includeVaultRootFiles])
 
@@ -74,7 +74,7 @@ export function SystemSection() {
         if (!cancelled) setSystemPromptTokenEstimate(null)
       }
     }
-    computeSystemPromptTokens()
+    void computeSystemPromptTokens()
     return () => { cancelled = true }
   }, [plugin, settings.systemPromptFilePath])
 
@@ -96,7 +96,7 @@ export function SystemSection() {
     ),
     [allFolders, vaultStructureFolders, descendantPaths])
 
-  const handleFolderToggle = async (folder: string, checked: boolean) => {
+  const handleFolderToggle = (folder: string, checked: boolean) => {
     const current = vaultStructureFolders
 
     let next: string[]
@@ -107,7 +107,7 @@ export function SystemSection() {
       next = current.filter((f) => f !== folder)
     }
 
-    await setSettings({
+    void setSettings({
       ...settings,
       chatOptions: {
         ...settings.chatOptions,
@@ -129,8 +129,8 @@ export function SystemSection() {
       >
         <ObsidianToggle
           value={settings.systemPromptEnabled}
-          onChange={async (value) => {
-            await setSettings({
+          onChange={(value) => {
+            void setSettings({
               ...settings,
               systemPromptEnabled: value,
             })
@@ -147,12 +147,12 @@ export function SystemSection() {
         app={plugin.app}
         value={settings.systemPromptFilePath}
         placeholder="Search for a markdown file..."
-        onChange={async (value: string) => {
-          await setSettings({
-            ...settings,
-            systemPromptFilePath: value,
-          })
-        }}
+        onChange={(value) => {
+            void setSettings({
+              ...settings,
+              systemPromptFilePath: value,
+            })
+          }}
       />
 
       {systemPromptTokenEstimate !== null && (
@@ -176,8 +176,8 @@ export function SystemSection() {
       >
         <ObsidianToggle
           value={settings.chatOptions.includeCurrentFileContent}
-          onChange={async (value) => {
-            await setSettings({
+          onChange={(value) => {
+            void setSettings({
               ...settings,
               chatOptions: {
                 ...settings.chatOptions,
@@ -198,8 +198,8 @@ export function SystemSection() {
       >
         <ObsidianToggle
           value={settings.chatOptions.includeVaultStructure}
-          onChange={async (value) => {
-            await setSettings({
+          onChange={(value) => {
+            void setSettings({
               ...settings,
               chatOptions: {
                 ...settings.chatOptions,
@@ -217,8 +217,8 @@ export function SystemSection() {
       >
         <ObsidianToggle
           value={includeVaultRootFiles}
-          onChange={async (value) => {
-            await setSettings({
+          onChange={(value) => {
+            void setSettings({
               ...settings,
               chatOptions: {
                 ...settings.chatOptions,
@@ -248,8 +248,8 @@ export function SystemSection() {
       >
         <ObsidianToggle
           value={includeAllFileTypes}
-          onChange={async (value) => {
-            await setSettings({
+          onChange={(value) => {
+            void setSettings({
               ...settings,
               chatOptions: {
                 ...settings.chatOptions,

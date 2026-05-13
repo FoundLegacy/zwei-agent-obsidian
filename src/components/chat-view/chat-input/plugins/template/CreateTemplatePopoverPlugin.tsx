@@ -45,7 +45,7 @@ export default function CreateTemplatePopoverPlugin({
 
   const updatePopoverPosition = useCallback(() => {
     if (!anchorElement || !contentEditableElement) return
-    const nativeSelection = document.getSelection()
+    const nativeSelection = (typeof activeDocument !== 'undefined' ? activeDocument : document).getSelection()
     const range = nativeSelection?.getRangeAt(0)
     if (!range || range.collapsed) {
       setIsPopoverOpen(false)

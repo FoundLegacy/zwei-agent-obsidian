@@ -50,8 +50,9 @@ export function ObsidianFileSelector({
         setOpen(false)
       }
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const rootDocument = (typeof activeDocument !== 'undefined' ? activeDocument : document)
+    rootDocument.addEventListener('mousedown', handler)
+    return () => rootDocument.removeEventListener('mousedown', handler)
   }, [open])
 
   const handleSelect = (file: TFile) => {

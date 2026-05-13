@@ -169,27 +169,25 @@ export function ToolsSection() {
       const tokens = await tokenCount(toolDescriptions)
       if (!cancelled) setToolsTokenEstimate(tokens)
     }
-    computeToolsTokens()
+    void computeToolsTokens()
     return () => { cancelled = true }
   }, [plugin, enabledTools])
 
   const validToolNames = useMemo(() => new Set(builtinTools.map((t) => t.name)), [])
 
-  // Clean up stale tool names from settings on mount
   useEffect(() => {
     const filtered = enabledTools.filter((n) => validToolNames.has(n))
     if (filtered.length !== enabledTools.length) {
-      setSettings({ ...settings, enabledTools: filtered })
+      void setSettings({ ...settings, enabledTools: filtered })
     }
   }, [])
 
-  const handleToolToggle = async (toolName: string, enabled: boolean) => {
+  const handleToolToggle = (toolName: string, enabled: boolean) => {
     let newEnabledTools = enabled
       ? [...enabledTools, toolName]
       : enabledTools.filter((n) => n !== toolName)
-    // Strip stale tool names not in the current builtin list
     newEnabledTools = newEnabledTools.filter((n) => validToolNames.has(n))
-    await setSettings({
+    void setSettings({
       ...settings,
       enabledTools: newEnabledTools,
     })
@@ -203,10 +201,10 @@ export function ToolsSection() {
       >
         <ObsidianTextInput
           value={settings.chatOptions.maxAutoIterations.toString()}
-          onChange={async (value) => {
+          onChange={(value) => {
             const parsedValue = parseInt(value)
             if (isNaN(parsedValue) || parsedValue < 1) return
-            await setSettings({
+            void setSettings({
               ...settings,
               chatOptions: {
                 ...settings.chatOptions,

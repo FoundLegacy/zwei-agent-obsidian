@@ -24,7 +24,7 @@ function ProviderFormComponent({
   const isEditing = !!provider
 
   const [providerType, setProviderType] = useState<LLMProviderType>(
-    (provider?.type as LLMProviderType) ?? 'openai',
+    (provider?.type as LLMProviderType) || 'openai',
   )
   const [providerId, setProviderId] = useState(provider?.id ?? '')
   const [baseUrl, setBaseUrl] = useState(provider?.baseUrl ?? '')
@@ -111,7 +111,7 @@ function ProviderFormComponent({
       )}
 
       <ObsidianSetting>
-        <ObsidianButton text={isEditing ? 'Save' : 'Add'} onClick={handleSubmit} cta />
+        <ObsidianButton text={isEditing ? 'Save' : 'Add'} onClick={() => void handleSubmit()} cta />
         <ObsidianButton text="Cancel" onClick={onClose} />
       </ObsidianSetting>
     </>

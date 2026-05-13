@@ -10,7 +10,7 @@ export default function SystemPromptBadge() {
   const handleToggle = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation()
-      setSettings({
+      void setSettings({
         ...settings,
         systemPromptEnabled: !settings.systemPromptEnabled,
       })

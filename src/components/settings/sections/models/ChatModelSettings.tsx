@@ -37,6 +37,11 @@ type ModelSettingsRegistry = {
   SettingsComponent: React.FC<SettingsComponentProps>
 }
 
+type ModelWithOptionalFields = ChatModel & {
+  pricing?: { inputCached: number; inputCacheMiss: number; output: number }
+  reasoning?: { enabled?: boolean; reasoning_effort?: string }
+}
+
 type PricingValues = {
   inputCached: string
   inputCacheMiss: string
@@ -48,7 +53,8 @@ function usePricingState(model: ChatModel): {
   setPricingValues: React.Dispatch<React.SetStateAction<PricingValues>>
   buildPricing: () => { inputCached: number; inputCacheMiss: number; output: number } | undefined
 } {
-  const pricing = 'pricing' in model ? (model as any).pricing : undefined
+  const modelExt = model as ModelWithOptionalFields
+  const pricing = modelExt.pricing
   const [pricingValues, setPricingValues] = useState<PricingValues>({
     inputCached: pricing?.inputCached?.toString() ?? '',
     inputCacheMiss: pricing?.inputCacheMiss?.toString() ?? '',
@@ -170,14 +176,15 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
 
     SettingsComponent: (props: SettingsComponentProps) => {
       const { model: initialModel, plugin, onClose } = props
+      const modelExt = initialModel as ModelWithOptionalFields
       const [temperature, setTemperature] = useState(
         initialModel.temperature?.toString() ?? '0.6',
       )
       const [reasoningEnabled, setReasoningEnabled] = useState<boolean>(
-        (initialModel as any).reasoning?.enabled ?? false,
+        modelExt.reasoning?.enabled ?? false,
       )
       const [reasoningEffort, setReasoningEffort] = useState<string>(
-        (initialModel as any).reasoning?.reasoning_effort ?? 'medium',
+        modelExt.reasoning?.reasoning_effort ?? 'medium',
       )
       const { pricingValues, setPricingValues, buildPricing } = usePricingState(initialModel)
 
@@ -244,7 +251,7 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
           <PricingSection pricingValues={pricingValues} setPricingValues={setPricingValues} />
 
           <ObsidianSetting>
-            <ObsidianButton text="Save" onClick={handleSubmit} cta />
+            <ObsidianButton text="Save" onClick={() => void handleSubmit()} cta />
             <ObsidianButton text="Cancel" onClick={onClose} />
           </ObsidianSetting>
         </>

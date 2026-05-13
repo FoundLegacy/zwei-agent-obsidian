@@ -67,7 +67,7 @@ function tryToPositionRange(
   try {
     range.setStart(anchorNode, startOffset)
     range.setEnd(anchorNode, endOffset)
-  } catch (_error) {
+  } catch {
     return false
   }
 
@@ -114,7 +114,7 @@ export function getScrollParent(
   const excludeStaticParent = style.position === 'absolute'
   const overflowRegex = includeHidden ? /(auto|scroll|hidden)/ : /(auto|scroll)/
   if (style.position === 'fixed') {
-    return document.body
+    return (typeof activeDocument !== 'undefined' ? activeDocument : document).body
   }
   for (
     let parent: HTMLElement | null = element;
@@ -131,7 +131,7 @@ export function getScrollParent(
       return parent
     }
   }
-  return document.body
+  return (typeof activeDocument !== 'undefined' ? activeDocument : document).body
 }
 
 export const SCROLL_TYPEAHEAD_OPTION_INTO_VIEW_COMMAND: LexicalCommand<{

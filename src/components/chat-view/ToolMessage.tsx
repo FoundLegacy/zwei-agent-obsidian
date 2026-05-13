@@ -105,7 +105,7 @@ function ToolCallItem({
     }
     try {
       return JSON.stringify(JSON.parse(request.arguments), null, 2)
-    } catch (_error) {
+    } catch {
       return request.arguments
     }
   }, [request.arguments])
@@ -158,18 +158,18 @@ function ToolCallItem({
               <button
                 className="za-toolcall-btn za-toolcall-btn-allow"
                 onClick={() => {
-                  handleToolCall()
-                  setIsOpen(false)
-                }}
+                void handleToolCall()
+                setIsOpen(false)
+              }}
               >
                 Allow
               </button>
               <button
                 className="za-toolcall-btn za-toolcall-btn-reject"
                 onClick={() => {
-                  handleReject()
-                  setIsOpen(false)
-                }}
+                void handleReject()
+                setIsOpen(false)
+              }}
               >
                 Reject
               </button>

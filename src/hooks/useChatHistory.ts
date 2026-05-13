@@ -1,5 +1,3 @@
-import debounce from 'lodash.debounce'
-import isEqual from 'lodash.isequal'
 import { App } from 'obsidian'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -24,6 +22,45 @@ type UseChatHistory = {
   getChatMessagesById: (id: string) => Promise<ChatMessage[] | null>
   updateConversationTitle: (id: string, title: string) => Promise<void>
   chatList: ChatConversationMetadata[]
+}
+
+function debounce<T extends (...args: unknown[]) => Promise<void>>(
+  fn: T,
+  delay: number,
+  options?: { maxWait?: number },
+): T {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let maxTimer: ReturnType<typeof setTimeout> | null = null
+
+  const debounced = function (this: unknown, ...args: unknown[]) {
+    if (maxTimer === null && options?.maxWait) {
+      maxTimer = setTimeout(() => {
+        if (timer !== null) {
+          clearTimeout(timer)
+          timer = null
+        }
+        maxTimer = null
+        fn.apply(this, args)
+      }, options.maxWait)
+    }
+    if (timer !== null) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(() => {
+      if (maxTimer !== null) {
+        clearTimeout(maxTimer)
+        maxTimer = null
+      }
+      timer = null
+      fn.apply(this, args)
+    }, delay)
+  } as T
+
+  return debounced
+}
+
+function isEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
 }
 
 export function useChatHistory(): UseChatHistory {

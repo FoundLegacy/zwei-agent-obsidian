@@ -381,12 +381,14 @@ export class ToolManager {
         return { status: ToolCallResponseStatus.Aborted }
       }
 
-      const parsedArgs: Record<string, unknown> =
-        typeof args === 'string'
-          ? args === ''
-            ? {}
-            : JSON.parse(args)
-          : (args ?? {})
+      let parsedArgs: Record<string, unknown> = {}
+      if (typeof args === 'string') {
+        if (args !== '') {
+          parsedArgs = JSON.parse(args) as Record<string, unknown>
+        }
+      } else {
+        parsedArgs = args ?? {}
+      }
 
       if (name === 'read_vault_file') {
         const path = parsedArgs['path']

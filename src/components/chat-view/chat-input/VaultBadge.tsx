@@ -10,7 +10,7 @@ export default function VaultBadge() {
   const handleToggle = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation()
-      setSettings({
+      void setSettings({
         ...settings,
         chatOptions: {
           ...settings.chatOptions,

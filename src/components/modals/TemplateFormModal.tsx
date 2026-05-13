@@ -248,12 +248,12 @@ function TemplateFormComponent({
           initialEditorState={initialEditorState}
           editorRef={editorRef}
           contentEditableRef={contentEditableRef}
-          onEnter={handleSubmit}
+          onEnter={() => void handleSubmit()}
         />
       </div>
 
       <ObsidianSetting>
-        <ObsidianButton text="Save" onClick={handleSubmit} cta />
+        <ObsidianButton text="Save" onClick={() => void handleSubmit()} cta />
         <ObsidianButton text="Cancel" onClick={onClose} />
       </ObsidianSetting>
     </>

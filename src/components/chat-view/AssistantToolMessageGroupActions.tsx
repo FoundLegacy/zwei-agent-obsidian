@@ -30,12 +30,13 @@ function CopyButton({ messages }: { messages: AssistantToolMessageGroup }) {
       .join('\n\n')
   }, [messages])
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(content)
-    setCopied(true)
-    window.setTimeout(() => {
-      setCopied(false)
-    }, 1500)
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(content).then(() => {
+      setCopied(true)
+      window.setTimeout(() => {
+        setCopied(false)
+      }, 1500)
+    })
   }
 
   return (

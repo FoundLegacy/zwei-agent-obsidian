@@ -12,7 +12,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { mergeRegister } from '@lexical/utils'
 
 function getActiveBody(): HTMLElement {
-  return typeof activeDocument !== 'undefined' ? activeDocument.body : document.body
+  return typeof activeDocument !== 'undefined' ? activeDocument.body : (typeof document !== 'undefined' ? document.body : {} as HTMLElement)
 }
 import {
   $getSelection,
@@ -81,7 +81,7 @@ export type MenuRenderFn<TOption extends MenuOption> = (
 ) => ReactPortal | React.JSX.Element | null
 
 const scrollIntoViewIfNeeded = (target: HTMLElement) => {
-  const typeaheadContainerNode = document.getElementById('typeahead-menu')
+  const typeaheadContainerNode = getActiveBody().querySelector('#typeahead-menu') as HTMLElement | null
   if (!typeaheadContainerNode) {
     return
   }
@@ -238,16 +238,18 @@ export function useDynamicPositioning(
         }
       }
       const resizeObserver = new ResizeObserver(onReposition)
-      window.addEventListener('resize', onReposition)
-      document.addEventListener('scroll', handleScroll, {
+      const respositionHandler = () => { onReposition() }
+      window.addEventListener('resize', respositionHandler)
+      const rootDocument = getActiveBody().ownerDocument ?? document
+      rootDocument.addEventListener('scroll', handleScroll, {
         capture: true,
         passive: true,
       })
       resizeObserver.observe(targetElement)
       return () => {
         resizeObserver.unobserve(targetElement)
-        window.removeEventListener('resize', onReposition)
-        document.removeEventListener('scroll', handleScroll, true)
+        window.removeEventListener('resize', respositionHandler)
+        rootDocument.removeEventListener('scroll', handleScroll, true)
       }
     }
   }, [targetElement, editor, onVisibilityChange, onReposition, resolution])
@@ -489,7 +491,9 @@ export function useMenuAnchorRef(
   shouldIncludePageYOffset__EXPERIMENTAL = true,
 ): MutableRefObject<HTMLElement> {
   const [editor] = useLexicalComposerContext()
-  const anchorElementRef = useRef<HTMLElement>(document.createElement('div'))
+  const anchorElementRef = useRef<HTMLElement>(
+    (typeof activeDocument !== 'undefined' ? activeDocument : document).createElement('div'),
+  )
   const positionMenu = useCallback(() => {
     anchorElementRef.current.style.top = anchorElementRef.current.style.bottom
     const rootElement = editor.getRootElement()

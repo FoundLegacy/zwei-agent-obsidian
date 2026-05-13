@@ -32,7 +32,7 @@ export function parseTagContents(input: string): ParsedTagContent[] {
   const thinkBlocks: string[] = []
   const cleanedInput = input.replace(
     /<think>([\s\S]*?)<\/think>/g,
-    (_match, content) => {
+    (_match: string, content: string) => {
       thinkBlocks.push(content.replace(/^\n|\n$/g, ''))
       return THINK_PLACEHOLDER
     },

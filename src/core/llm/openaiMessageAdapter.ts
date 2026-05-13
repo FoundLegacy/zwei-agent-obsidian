@@ -220,7 +220,7 @@ export class OpenAIMessageAdapter {
       created: response.created,
       model: response.model,
       object: 'chat.completion',
-      system_fingerprint: response.system_fingerprint,
+      system_fingerprint: (response as unknown as Record<string, unknown>).system_fingerprint as string | undefined,
       usage: response.usage,
     }
   }
@@ -250,7 +250,7 @@ export class OpenAIMessageAdapter {
       created: chunk.created,
       model: chunk.model,
       object: 'chat.completion.chunk',
-      system_fingerprint: chunk.system_fingerprint,
+      system_fingerprint: (chunk as unknown as Record<string, unknown>).system_fingerprint as string | undefined,
       usage: chunk.usage ?? undefined,
     }
   }

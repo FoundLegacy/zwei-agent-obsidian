@@ -32,7 +32,7 @@ function TitleInput({
       onKeyDown={(e) => {
         e.stopPropagation()
         if (e.key === 'Enter') {
-          onSubmit(value)
+          void onSubmit(value)
         }
       }}
       autoFocus
@@ -73,7 +73,7 @@ function ChatListItem({
   return (
     <li
       ref={itemRef}
-      onClick={onSelect}
+      onClick={() => void onSelect()}
       onMouseEnter={onMouseEnter}
       className={isFocused ? 'selected' : ''}
     >
@@ -97,7 +97,6 @@ function ChatListItem({
             e.stopPropagation()
             await onDelete()
           }}
-          className="clickable-icon za-chat-list-dropdown-item-icon"
         >
           <Trash2 />
         </button>
@@ -142,7 +141,7 @@ export function ChatListDropdown({
       } else if (e.key === 'ArrowDown') {
         setFocusedIndex(Math.min(chatList.length - 1, focusedIndex + 1))
       } else if (e.key === 'Enter') {
-        onSelect(chatList[focusedIndex].id)
+        void onSelect(chatList[focusedIndex].id)
         setOpen(false)
       }
     },

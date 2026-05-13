@@ -26,14 +26,13 @@ export default function MarkdownCodeComponent({
     return !language || ['markdown'].includes(language)
   }, [language])
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(String(children))
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(String(children)).then(() => {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
+    }).catch((err) => {
       console.error('Failed to copy text: ', err)
-    }
+    })
   }
 
   const handleOpenFile = () => {

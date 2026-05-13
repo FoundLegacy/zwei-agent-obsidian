@@ -23,8 +23,8 @@ export function ChatSection() {
                 chatModel.id,
               ]),
           )}
-          onChange={async (value) => {
-            await setSettings({
+          onChange={(value) => {
+            void setSettings({
               ...settings,
               chatModelId: value,
             })

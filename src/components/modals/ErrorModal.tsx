@@ -70,10 +70,9 @@ function ErrorModalComponent({
             className="mod-cta"
             onClick={() => {
               onClose()
-              // @ts-expect-error: setting property exists in Obsidian's App but is not typed
-              app.setting.open()
-              // @ts-expect-error: setting property exists in Obsidian's App but is not typed
-              app.setting.openTabById('zulu-agent')
+              const appWithSetting = app as App & { setting: { open: () => void; openTabById: (id: string) => void } }
+              appWithSetting.setting.open()
+              appWithSetting.setting.openTabById('zulu-agent')
             }}
           >
             Open Settings

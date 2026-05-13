@@ -11,6 +11,7 @@ import {
 import { RequestMessage } from '../../types/llm/request'
 import {
   MentionableBlock,
+  MentionableCurrentFile,
   MentionableFile,
   MentionableFolder,
   MentionableUrl,
@@ -72,9 +73,10 @@ export class PromptGenerator {
 
     const systemMessage = await this.getSystemMessage()
 
-    const currentFile = lastUserMessage.mentionables.find(
-      (m) => m.type === 'current-file',
-    )?.file
+    const currentFileMentionable = lastUserMessage.mentionables.find(
+      (m): m is MentionableCurrentFile => m.type === 'current-file',
+    )
+    const currentFile = currentFileMentionable?.file
     const currentFileMessage =
       currentFile && this.settings.chatOptions.includeCurrentFileContent
         ? await this.getCurrentFileMessage(currentFile)

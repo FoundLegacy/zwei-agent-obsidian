@@ -26,7 +26,7 @@ export function ChatModelsSubSection({
 }: ChatModelsSubSectionProps) {
   const { settings, setSettings } = useSettings()
 
-  const handleDeleteChatModel = async (modelId: string) => {
+  const handleDeleteChatModel = (modelId: string) => {
     if (modelId === settings.chatModelId) {
       new Notice(
         'Cannot remove model that is currently selected as Chat Model',
@@ -39,8 +39,8 @@ export function ChatModelsSubSection({
       title: 'Delete Chat Model',
       message: message,
       ctaText: 'Delete',
-      onConfirm: async () => {
-        await setSettings({
+      onConfirm: () => {
+        void setSettings({
           ...settings,
           chatModels: [...settings.chatModels].filter((v) => v.id !== modelId),
         })
@@ -48,7 +48,7 @@ export function ChatModelsSubSection({
     }).open()
   }
 
-  const handleToggleEnableChatModel = async (
+  const handleToggleEnableChatModel = (
     modelId: string,
     value: boolean,
   ) => {
@@ -60,8 +60,7 @@ export function ChatModelsSubSection({
         'Cannot disable model that is currently selected as Chat Model',
       )
 
-      // to trigger re-render
-      await setSettings({
+      void setSettings({
         ...settings,
         chatModels: [...settings.chatModels].map((v) =>
           v.id === modelId ? { ...v, enable: true } : v,
@@ -70,7 +69,7 @@ export function ChatModelsSubSection({
       return
     }
 
-    await setSettings({
+    void setSettings({
       ...settings,
       chatModels: [...settings.chatModels].map((v) =>
         v.id === modelId ? { ...v, enable: value } : v,
@@ -107,9 +106,9 @@ export function ChatModelsSubSection({
                 <td>
                   <ObsidianToggle
                     value={isEnabled(chatModel.enable)}
-                    onChange={(value) =>
-                      handleToggleEnableChatModel(chatModel.id, value)
-                    }
+                      onChange={(value) =>
+                        void handleToggleEnableChatModel(chatModel.id, value)
+                      }
                   />
                 </td>
                 <td>
@@ -132,7 +131,7 @@ export function ChatModelsSubSection({
                       (v) => v.id === chatModel.id,
                     ) && (
                       <button
-                        onClick={() => handleDeleteChatModel(chatModel.id)}
+                        onClick={() => void handleDeleteChatModel(chatModel.id)}
                         className="clickable-icon"
                       >
                         <Trash2 />

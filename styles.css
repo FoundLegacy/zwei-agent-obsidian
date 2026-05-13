@@ -55,7 +55,6 @@
   }
 
   code {
-    font-size: var(--font-ui-small);
     border-radius: var(--code-radius);
     padding: 0.1em 0.25em;
     color: var(--code-normal);
@@ -94,14 +93,13 @@
   background: var(--background-modifier-form-field);
   color: var(--text-normal);
   font-family: inherit;
-  padding: 0;
-  font-size: var(--font-ui-small);
   outline: none;
   min-height: 80px;
   max-height: 200px;
   overflow-y: auto;
   font-size: var(--font-ui-small);
   padding: var(--size-2-1);
+  line-height: var(--line-height-tight);
 }
 
 @media (hover: hover) {
@@ -122,9 +120,6 @@
 /* .obsidian-default-textarea::placeholder {
   color: var(--text-faint);
 } */
-.obsidian-default-textarea {
-  line-height: var(--line-height-tight);
-}
 
 .za-chat-user-input-container {
   position: relative;
@@ -292,10 +287,6 @@
  */
 
 .za-lexical-content-editable-root .mention {
-  background-color: var(--tag-background);
-  color: var(--tag-color);
-  padding: var(--size-2-1) calc(var(--size-2-1));
-  border-radius: var(--radius-s);
   background-color: var(--tag-background);
   color: var(--tag-color);
   padding: 0 calc(var(--size-2-1));
@@ -470,8 +461,8 @@ input[type='text'].za-chat-list-dropdown-item-title-input {
   }
 
   /* Override clickable-icon color */
-  .za-code-block-header-button.clickable-icon {
-    color: var(--text-color) !important;
+  .za-code-block-header .za-code-block-header-button.clickable-icon {
+    color: var(--text-color);
   }
 }
 
@@ -483,19 +474,19 @@ input[type='text'].za-chat-list-dropdown-item-title-input {
   padding: var(--size-4-3);
 }
 
-button.za-chat-input-model-select {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  padding: 0 !important;
-  font-size: var(--font-smallest) !important;
-  font-weight: var(--font-medium) !important;
-  color: var(--text-muted) !important;
-  cursor: pointer !important;
-  height: auto !important;
+.za-chat-user-input-controls button.za-chat-input-model-select {
+  background-color: transparent;
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+  font-size: var(--font-smallest);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  cursor: pointer;
+  height: auto;
 
   &:hover {
-    color: var(--text-normal) !important;
+    color: var(--text-normal);
   }
 
   .za-chat-input-model-select__model-name {
@@ -589,9 +580,9 @@ button.za-chat-input-model-select {
 }
 
 /* prevent setting-item:first-child overwriting padding-top and border-top */
-.za-settings-textarea-header {
-  padding-top: 0.75em !important;
-  border-top: 1px solid var(--background-modifier-border) !important;
+.za-settings-textarea.za-settings-textarea-header {
+  padding-top: 0.75em;
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 .za-settings-model-container {
@@ -1553,8 +1544,8 @@ button.za-chat-input-model-select {
   }
 
   /* Show frontmatter which is hidden by default */
-  .frontmatter {
-    display: block !important;
+  .za-markdown-rendered .frontmatter.frontmatter {
+    display: block;
     background-color: transparent;
     border-top: 1px solid var(--background-modifier-border);
     border-bottom: 1px solid var(--background-modifier-border);
@@ -1729,14 +1720,14 @@ button.za-chat-input-model-select {
   display: flex;
   align-items: center;
 
-  .za-split-button-primary {
-    border-radius: var(--button-radius) 0 0 var(--button-radius) !important;
+  .za-split-button .za-split-button-primary {
+    border-radius: var(--button-radius) 0 0 var(--button-radius);
   }
 
-  .za-split-button-toggle {
+  .za-split-button .za-split-button-toggle {
     padding: var(--size-4-1);
-    border-radius: 0 var(--button-radius) var(--button-radius) 0 !important;
-    border-left: none !important;
+    border-radius: 0 var(--button-radius) var(--button-radius) 0;
+    border-left: none;
   }
 }
 

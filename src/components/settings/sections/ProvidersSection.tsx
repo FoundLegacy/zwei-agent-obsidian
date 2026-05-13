@@ -23,7 +23,7 @@ type ProvidersSectionProps = {
 export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
   const { settings, setSettings } = useSettings()
 
-  const handleDeleteProvider = async (provider: LLMProvider) => {
+  const handleDeleteProvider = (provider: LLMProvider) => {
     const associatedChatModels = settings.chatModels.filter(
       (m) => m.providerId === provider.id,
     )
@@ -37,8 +37,8 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
       title: 'Delete Provider',
       message: message,
       ctaText: 'Delete',
-      onConfirm: async () => {
-        await setSettings({
+      onConfirm: () => {
+        void setSettings({
           ...settings,
           providers: [...settings.providers].filter(
             (v) => v.id !== provider.id,

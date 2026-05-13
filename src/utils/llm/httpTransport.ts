@@ -135,6 +135,14 @@ export async function postStream(
   return response
 }
 
+async function loadHttp(): Promise<typeof import('http')> {
+  return import('http')
+}
+
+async function loadHttps(): Promise<typeof import('https')> {
+  return import('https')
+}
+
 async function nodePost(
   endpoint: string,
   body: string,
@@ -146,12 +154,8 @@ async function nodePost(
     throw new Error('HTTP transport is not available on mobile')
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Node modules only available on Obsidian desktop via Electron; mobile falls back to fetch
-  const http = require('http') as typeof import('http')
-  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Node modules only available on Obsidian desktop via Electron; mobile falls back to fetch
-  const https = require('https') as typeof import('https')
   const url = new URL(endpoint)
-  const client = url.protocol === 'https:' ? https : http
+  const client = url.protocol === 'https:' ? await loadHttps() : await loadHttp()
   const payloadLength = Buffer.byteLength(body)
   const requestHeaders: Record<string, string> = {
     'Content-Type': contentType,

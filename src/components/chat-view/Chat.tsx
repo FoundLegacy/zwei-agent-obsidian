@@ -328,14 +328,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     const updateConversationAsync = async () => {
       try {
         if (chatMessages.length > 0) {
-          createOrUpdateConversation(currentConversationId, chatMessages)
+          await createOrUpdateConversation(currentConversationId, chatMessages)
         }
       } catch (error) {
         new Notice('Failed to save chat history')
         console.error('Failed to save chat history', error)
       }
     }
-    updateConversationAsync()
+    void updateConversationAsync()
   }, [currentConversationId, chatMessages, createOrUpdateConversation])
 
   const handleActiveLeafChange = useCallback(() => {
@@ -471,7 +471,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   (chat) => chat.id !== conversationId,
                 )
                 if (nextConversation) {
-                  void handleLoadConversation(nextConversation.id)
+                  await handleLoadConversation(nextConversation.id)
                 } else {
                   handleNewChat()
                 }
@@ -517,7 +517,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               }}
               onSubmit={(content) => {
                 if (editorStateToPlainText(content).trim() === '') return
-                handleUserMessageSubmit({
+                void handleUserMessageSubmit({
                   inputChatMessages: [
                     ...groupedChatMessages
                       .slice(0, index)
@@ -597,7 +597,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         }}
         onSubmit={(content) => {
           if (editorStateToPlainText(content).trim() === '') return
-          handleUserMessageSubmit({
+          void handleUserMessageSubmit({
             inputChatMessages: [...chatMessages, { ...inputMessage, content }],
           })
           setInputMessage(getNewInputMessage(app))

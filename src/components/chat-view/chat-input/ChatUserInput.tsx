@@ -163,7 +163,9 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
     const handleSubmit = () => {
       const content = editorRef.current?.getEditorState()?.toJSON()
-      content && onSubmit(content)
+      if (content) {
+        onSubmit(content)
+      }
     }
 
     return (
