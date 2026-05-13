@@ -2290,3 +2290,12 @@ button.za-chat-input-model-select {
   color: var(--text-on-accent);
   background: var(--interactive-accent);
 }
+
+#typeahead-menu {
+  display: block;
+  position: absolute;
+}
+
+.za-template-section-modal {
+  width: 720px;
+}

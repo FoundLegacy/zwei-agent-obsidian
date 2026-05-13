@@ -191,7 +191,7 @@ const BUILTIN_TOOLS: Tool[] = [
   {
     name: 'list_css_snippets',
     description:
-      'List all CSS snippets in .obsidian/snippets/. Returns filenames.',
+      'List all vault CSS snippets. Returns filenames.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -201,7 +201,7 @@ const BUILTIN_TOOLS: Tool[] = [
   {
     name: 'read_css_snippet',
     description:
-      'Read the content of a CSS snippet from .obsidian/snippets/. Provide the filename (e.g. "my-theme.css").',
+      'Read the content of a vault CSS snippet. Provide the filename (e.g. "my-theme.css").',
     inputSchema: {
       type: 'object',
       properties: {
@@ -239,7 +239,7 @@ const BUILTIN_TOOLS: Tool[] = [
   {
     name: 'css_snippet_operation',
     description:
-      'Create or delete a CSS snippet in .obsidian/snippets/. Requires user approval. For create: provide filename (.css) + content. For delete: provide filename (permanent).',
+      'Create or delete a vault CSS snippet. Requires user approval. For create: provide filename (.css) + content. For delete: provide filename (permanent).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -262,8 +262,8 @@ const BUILTIN_TOOLS: Tool[] = [
   },
 ]
 
-function cssSnippetPath(filename: string): string {
-  return normalizePath(`.obsidian/snippets/${filename}`)
+function cssSnippetPath(filename: string, configDir: string): string {
+  return normalizePath(`${configDir}/snippets/${filename}`)
 }
 
 const BUILTIN_TOOL_NAMES = new Set(BUILTIN_TOOLS.map((t) => t.name))
@@ -772,7 +772,7 @@ export class ToolManager {
           return { status: ToolCallResponseStatus.Aborted }
         }
 
-        await this.app.vault.trash(file, false)
+        await this.app.fileManager.trashFile(file)
 
         return {
           status: ToolCallResponseStatus.Success,
@@ -856,7 +856,7 @@ export class ToolManager {
           return { status: ToolCallResponseStatus.Aborted }
         }
 
-        await this.app.vault.trash(folder, false)
+        await this.app.fileManager.trashFile(folder)
 
         return {
           status: ToolCallResponseStatus.Success,
@@ -988,14 +988,14 @@ export class ToolManager {
       }
 
       if (name === 'list_css_snippets') {
-        const snippetsDir = normalizePath('.obsidian/snippets')
+        const snippetsDir = normalizePath(`${this.app.vault.configDir}/snippets`)
         const exists = await this.app.vault.adapter.exists(snippetsDir)
         if (!exists) {
           return {
             status: ToolCallResponseStatus.Success,
             data: {
               type: 'text',
-              text: 'No CSS snippets found. The .obsidian/snippets folder does not exist yet.',
+              text: 'No CSS snippets found. The CSS snippets folder does not exist yet.',
             },
           }
         }
@@ -1008,7 +1008,7 @@ export class ToolManager {
             status: ToolCallResponseStatus.Success,
             data: {
               type: 'text',
-              text: 'No CSS snippets found. The .obsidian/snippets folder is empty.',
+              text: 'No CSS snippets found. The CSS snippets folder is empty.',
             },
           }
         }
@@ -1039,7 +1039,7 @@ export class ToolManager {
           }
         }
 
-        const snippetPath = cssSnippetPath(filename)
+        const snippetPath = cssSnippetPath(filename, this.app.vault.configDir)
         if (!(await this.app.vault.adapter.exists(snippetPath))) {
           return {
             status: ToolCallResponseStatus.Error,
@@ -1086,7 +1086,7 @@ export class ToolManager {
           }
         }
 
-        const snippetPath = cssSnippetPath(filename)
+        const snippetPath = cssSnippetPath(filename, this.app.vault.configDir)
         if (!(await this.app.vault.adapter.exists(snippetPath))) {
           return {
             status: ToolCallResponseStatus.Error,
@@ -1168,7 +1168,7 @@ export class ToolManager {
             }
           }
 
-          const snippetPath = cssSnippetPath(filename)
+          const snippetPath = cssSnippetPath(filename, this.app.vault.configDir)
 
           if (await this.app.vault.adapter.exists(snippetPath)) {
             return {
@@ -1177,12 +1177,12 @@ export class ToolManager {
             }
           }
 
-          // Ensure .obsidian/snippets directory exists
-          const snippetsDir = normalizePath('.obsidian/snippets')
+          // Ensure CSS snippets directory exists
+          const snippetsDir = normalizePath(`${this.app.vault.configDir}/snippets`)
           if (!(await this.app.vault.adapter.exists(snippetsDir))) {
-            const obsidianDir = normalizePath('.obsidian')
-            if (!(await this.app.vault.adapter.exists(obsidianDir))) {
-              await this.app.vault.adapter.mkdir(obsidianDir)
+            const configDir = normalizePath(this.app.vault.configDir)
+            if (!(await this.app.vault.adapter.exists(configDir))) {
+              await this.app.vault.adapter.mkdir(configDir)
             }
             await this.app.vault.adapter.mkdir(snippetsDir)
           }
@@ -1203,7 +1203,7 @@ export class ToolManager {
         }
 
         // action === 'delete'
-        const snippetPath = cssSnippetPath(filename)
+        const snippetPath = cssSnippetPath(filename, this.app.vault.configDir)
 
         if (!(await this.app.vault.adapter.exists(snippetPath))) {
           return {

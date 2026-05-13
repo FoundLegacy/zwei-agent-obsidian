@@ -71,7 +71,7 @@ export type ChatProps = {
 
 const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const app = useApp()
-  const { settings, setSettings } = useSettings()
+  const { settings } = useSettings()
   const plugin = usePlugin()
 
   const {
@@ -203,7 +203,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       })
 
       setChatMessages(inputChatMessages)
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         forceScrollToBottom()
       })
 
@@ -282,7 +282,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           chatMessages: updatedMessages,
           conversationId: currentConversationId,
         })
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
           forceScrollToBottom()
         })
       }

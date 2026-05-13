@@ -99,7 +99,7 @@ function FolderBadge({
 }
 
 function VaultBadge({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- mentionable parameter is part of the component prop interface but VaultBadge doesn't use it
   mentionable,
   onDelete,
   onClick,

@@ -22,21 +22,6 @@ export function getProviderClient({
     throw new Error(`Provider ${providerId} not found`)
   }
 
-  const onProviderUpdate = setSettings
-    ? async (targetProviderId: string, update: Partial<LLMProvider>) => {
-        const updatedProviders: LLMProvider[] = settings.providers.map(
-          (item) =>
-            item.id === targetProviderId
-              ? ({ ...item, ...update } as LLMProvider)
-              : item,
-        )
-        await setSettings({
-          ...settings,
-          providers: updatedProviders,
-        })
-      }
-    : undefined
-
   return new OpenAIAuthenticatedProvider(provider)
 }
 

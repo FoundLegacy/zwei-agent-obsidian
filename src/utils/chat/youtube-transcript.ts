@@ -74,6 +74,19 @@ export type TranscriptAndMetadataResponse = {
   transcript: Transcript[]
 }
 
+interface CaptionTrack {
+  languageCode: string
+  baseUrl: string
+  name?: { simpleText: string }
+  vssId?: string
+}
+
+interface PlayerCaptionsTracklistRenderer {
+  captionTracks: CaptionTrack[]
+  audioTracks?: unknown[]
+  translationLanguages?: unknown[]
+}
+
 /**
  * Class to retrieve transcript if exist
  */
@@ -117,14 +130,14 @@ export class YoutubeTranscript {
 
     const captions = (() => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- YouTube page HTML parsing returns unstructured JSON
         return JSON.parse(
           splittedHTML[1].split(',"videoDetails')[0].replace('\n', ''),
         )
-      } catch (e) {
+      } catch (_e) {
         return undefined
       }
-    })()?.playerCaptionsTracklistRenderer
+    })()?.playerCaptionsTracklistRenderer as PlayerCaptionsTracklistRenderer | undefined
 
     if (!captions) {
       throw new YoutubeTranscriptDisabledError(videoId)
@@ -137,26 +150,23 @@ export class YoutubeTranscript {
     if (
       config?.lang &&
       !captions.captionTracks.some(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (track: any) => track.languageCode === config?.lang,
+        (track: CaptionTrack) => track.languageCode === config?.lang,
       )
     ) {
       throw new YoutubeTranscriptNotAvailableLanguageError(
         config?.lang,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-        captions.captionTracks.map((track: any) => track.languageCode),
+        captions.captionTracks.map((track: CaptionTrack) => track.languageCode),
         videoId,
       )
     }
 
-    const transcriptURL: string = (
+    const transcriptURL = (
       config?.lang
         ? captions.captionTracks.find(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (track: any) => track.languageCode === config?.lang,
+            (track: CaptionTrack) => track.languageCode === config?.lang,
           )
         : captions.captionTracks[0]
-    ).baseUrl
+    )!.baseUrl
 
     const transcriptResponse = await requestUrl({
       url: transcriptURL,

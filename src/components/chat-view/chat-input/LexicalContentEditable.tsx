@@ -73,13 +73,13 @@ export default function LexicalContentEditable({
   )
 
   /*
-   * Using requestAnimationFrame for autoFocus instead of using editor.focus()
+   * Using window.requestAnimationFrame for autoFocus instead of using editor.focus()
    * due to known issues with editor.focus() when initialConfig.editorState is set
    * See: https://github.com/facebook/lexical/issues/4460
    */
   useEffect(() => {
     if (autoFocus) {
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         contentEditableRef.current?.focus()
       })
     }

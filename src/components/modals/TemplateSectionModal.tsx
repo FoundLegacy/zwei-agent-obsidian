@@ -51,7 +51,7 @@ export class TemplateSectionModal extends Modal {
         plugin={this.plugin}
       />,
     )
-    this.modalEl.style.width = '720px'
+    this.modalEl.addClass('za-template-section-modal')
   }
 
   onClose() {

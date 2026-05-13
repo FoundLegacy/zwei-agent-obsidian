@@ -38,7 +38,7 @@ export function useChatHistory(): UseChatHistory {
 
   useEffect(() => {
     void fetchChatList()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial fetch on mount, dependencies intentionally empty
   }, [])
 
   const createOrUpdateConversation = useMemo(

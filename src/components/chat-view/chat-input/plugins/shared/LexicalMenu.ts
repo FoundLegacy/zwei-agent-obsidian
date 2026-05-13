@@ -10,6 +10,10 @@
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { mergeRegister } from '@lexical/utils'
+
+function getActiveBody(): HTMLElement {
+  return typeof activeDocument !== 'undefined' ? activeDocument.body : document.body
+}
 import {
   $getSelection,
   $isRangeSelection,
@@ -74,7 +78,7 @@ export type MenuRenderFn<TOption extends MenuOption> = (
     options: TOption[]
   },
   matchingString: string | null,
-) => ReactPortal | JSX.Element | null
+) => ReactPortal | React.JSX.Element | null
 
 const scrollIntoViewIfNeeded = (target: HTMLElement) => {
   const typeaheadContainerNode = document.getElementById('typeahead-menu')
@@ -110,7 +114,7 @@ function getFullMatchOffset(
 ): number {
   let triggerOffset = offset
   for (let i = triggerOffset; i <= entryText.length; i++) {
-    if (documentText.substr(-i) === entryText.substr(0, i)) {
+    if (documentText.substring(-i) === entryText.substring(0, i)) {
       triggerOffset = i
     }
   }
@@ -165,7 +169,7 @@ export function getScrollParent(
   const excludeStaticParent = style.position === 'absolute'
   const overflowRegex = includeHidden ? /(auto|scroll|hidden)/ : /(auto|scroll)/
   if (style.position === 'fixed') {
-    return document.body
+    return getActiveBody()
   }
   for (
     let parent: HTMLElement | null = element;
@@ -182,7 +186,7 @@ export function getScrollParent(
       return parent
     }
   }
-  return document.body
+  return getActiveBody()
 }
 
 function isTriggerVisibleInNearestScrollContainer(
@@ -208,7 +212,7 @@ export function useDynamicPositioning(
       const rootScrollParent =
         rootElement != null
           ? getScrollParent(rootElement, false)
-          : document.body
+          : getActiveBody()
       let ticking = false
       let previousIsInView = isTriggerVisibleInNearestScrollContainer(
         targetElement,
@@ -279,7 +283,7 @@ export function LexicalMenu<TOption extends MenuOption>({
     matchingString: string,
   ) => void
   commandPriority?: CommandListenerPriority
-}): JSX.Element | null {
+}): React.JSX.Element | null {
   const [selectedIndex, setHighlightedIndex] = useState<null | number>(null)
 
   const matchingString = resolution.match?.matchingString
@@ -481,7 +485,7 @@ export function useMenuAnchorRef(
   resolution: MenuResolution | null,
   setResolution: (r: MenuResolution | null) => void,
   className?: string,
-  parent: HTMLElement = document.body,
+  parent: HTMLElement = getActiveBody(),
   shouldIncludePageYOffset__EXPERIMENTAL = true,
 ): MutableRefObject<HTMLElement> {
   const [editor] = useLexicalComposerContext()
@@ -499,9 +503,9 @@ export function useMenuAnchorRef(
         top +
         anchorHeight +
         3 +
-        (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
+        (shouldIncludePageYOffset__EXPERIMENTAL ? window.scrollY : 0)
       }px`
-      containerDiv.style.left = `${left + window.pageXOffset}px`
+      containerDiv.style.left = `${left + window.scrollX}px`
       containerDiv.style.height = `${height}px`
       containerDiv.style.width = `${width}px`
       if (menuEle !== null) {
@@ -514,7 +518,7 @@ export function useMenuAnchorRef(
 
         if (left + menuWidth > rootElementRect.right) {
           containerDiv.style.left = `${
-            rootElementRect.right - menuWidth + window.pageXOffset
+            rootElementRect.right - menuWidth + window.scrollX
           }px`
         }
         if (
@@ -529,7 +533,7 @@ export function useMenuAnchorRef(
             top -
             menuHeight -
             height +
-            (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
+            (shouldIncludePageYOffset__EXPERIMENTAL ? window.scrollY : 0)
           }px`
         }
       }
@@ -541,8 +545,6 @@ export function useMenuAnchorRef(
         containerDiv.setAttribute('aria-label', 'Typeahead menu')
         containerDiv.setAttribute('id', 'typeahead-menu')
         containerDiv.setAttribute('role', 'listbox')
-        containerDiv.style.display = 'block'
-        containerDiv.style.position = 'absolute'
         parent.append(containerDiv)
       }
       anchorElementRef.current = containerDiv

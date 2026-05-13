@@ -74,7 +74,7 @@ export function ObsidianFileSelector({
         onFocus={() => {
           setOpen(true)
           setSearch('')
-          setTimeout(() => inputRef.current?.focus(), 0)
+          window.setTimeout(() => inputRef.current?.focus(), 0)
         }}
         onChange={(e) => {
           if (open) {

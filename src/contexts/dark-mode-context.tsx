@@ -22,12 +22,12 @@ export function DarkModeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleDarkMode = () => {
-      setIsDarkMode(document.body.classList.contains('theme-dark'))
+      setIsDarkMode(activeDocument.body.classList.contains('theme-dark'))
     }
     handleDarkMode()
     app.workspace.on('css-change', handleDarkMode)
     return () => app.workspace.off('css-change', handleDarkMode)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount to set initial dark mode state
   }, [])
 
   return (

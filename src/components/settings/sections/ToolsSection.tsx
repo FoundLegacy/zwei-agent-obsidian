@@ -96,7 +96,7 @@ const builtinTools = [
   {
     name: 'list_css_snippets',
     label: 'List CSS Snippets',
-    description: 'List all CSS snippets available in the vault (.obsidian/snippets/).',
+    description: 'List all CSS snippets available in the vault.',
     tab: 'css-snippets',
     parameters: [],
   },
@@ -123,7 +123,7 @@ const builtinTools = [
   {
     name: 'css_snippet_operation',
     label: 'CSS Snippet Create/Delete',
-    description: 'Create or delete a CSS snippet in .obsidian/snippets/. Set action to "create" or "delete". Requires user approval.',
+    description: 'Create or delete a CSS snippet. Set action to "create" or "delete". Requires user approval.',
     tab: 'css-snippets',
     parameters: [
       { name: 'action', type: '"create" | "delete"', required: true, desc: 'Operation to perform on the snippet' },
